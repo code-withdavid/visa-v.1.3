@@ -51,13 +51,27 @@ function ProtectedLayout() {
           </header>
           <main className="flex-1 overflow-auto">
             <Switch>
-              <Route path="/" component={Dashboard} />
-              <Route path="/dashboard" component={Dashboard} />
-              <Route path="/applications/new" component={NewApplication} />
+              {/* Applicant Only Routes */}
+              <Route path="/">
+                {user.role === "applicant" ? <Dashboard /> : <Redirect to="/officer" />}
+              </Route>
+              <Route path="/dashboard">
+                {user.role === "applicant" ? <Dashboard /> : <Redirect to="/officer" />}
+              </Route>
+              <Route path="/applications/new">
+                {user.role === "applicant" ? <NewApplication /> : <Redirect to="/officer" />}
+              </Route>
+              
+              {/* Common Routes */}
               <Route path="/applications/:id" component={ApplicationDetail} />
-              <Route path="/officer" component={OfficerDashboard} />
               <Route path="/blockchain" component={BlockchainLedger} />
               <Route path="/chat" component={ChatBot} />
+              
+              {/* Officer & Admin Routes */}
+              <Route path="/officer">
+                {user.role === "officer" || user.role === "admin" ? <OfficerDashboard /> : <Redirect to="/dashboard" />}
+              </Route>
+              
               <Route component={NotFound} />
             </Switch>
           </main>
@@ -68,7 +82,7 @@ function ProtectedLayout() {
 }
 
 function Router() {
-  const { user, isLoading } = useAuth();
+  const { isLoading } = useAuth();
 
   if (isLoading) {
     return (

@@ -69,7 +69,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   // ── AUTH ──────────────────────────────────────────────────────────────────
   app.post("/api/auth/register", async (req: Request, res: Response) => {
     try {
-      const { fullName, email, password, nationality, passportNumber, dateOfBirth, phone } = req.body;
+      const { fullName, email, password, nationality, passportNumber, dateOfBirth, phone, role } = req.body;
       if (!fullName || !email || !password) {
         return res.status(400).json({ message: "Full name, email, and password are required" });
       }
@@ -77,7 +77,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       if (existing) return res.status(409).json({ message: "Email already registered" });
 
       const user = await storage.createUser({
-        fullName, email, password, nationality, passportNumber, dateOfBirth, phone, role: "applicant",
+        fullName, email, password, nationality, passportNumber, dateOfBirth, phone, role: role || "applicant",
       });
       const token = createSession(user.id);
       const { password: _, ...safeUser } = user;
@@ -204,7 +204,6 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     try {
       const userId = getSessionUserId(req);
       if (!userId) return res.status(401).json({ message: "Not authenticated" });
-      const doc = await storage.getDocumentsByApplication(0); // We'll find via docId
       const docId = Number(req.params.docId);
 
       const message = await anthropic.messages.create({
@@ -288,7 +287,6 @@ Generate a risk assessment. Return ONLY valid JSON:
         aiAnalysisSummary: parsed.summary,
       });
 
-      // Advance timeline to stage 4 (risk assessment complete)
       const timeline = await storage.getTimeline(app.id);
       const stage4 = timeline.find(t => t.stage === 4);
       if (stage4 && stage4.status !== "completed") {
@@ -314,7 +312,6 @@ Generate a risk assessment. Return ONLY valid JSON:
     try {
       const userId = getSessionUserId(req);
       if (!userId) return res.status(401).json({ message: "Not authenticated" });
-      const user = await storage.getUser(userId);
       const appId = Number(req.params.id);
       const app = await storage.getApplication(appId);
       if (!app) return res.status(404).json({ message: "Not found" });
@@ -329,7 +326,6 @@ Generate a risk assessment. Return ONLY valid JSON:
           completedAt: new Date(),
           notes: notes || null,
         });
-        // Mark next stage as in_progress
         const next = timeline.find(t => t.stage === stage + 1);
         if (next && next.status === "pending") {
           await storage.updateTimelineEntry(next.id, { status: "in_progress" });
@@ -420,7 +416,6 @@ Generate a risk assessment. Return ONLY valid JSON:
         expiryDate: expiryStr,
       });
 
-      // Complete all timeline stages
       const timeline = await storage.getTimeline(app.id);
       for (const entry of timeline) {
         if (entry.status !== "completed") {
@@ -460,7 +455,6 @@ Generate a risk assessment. Return ONLY valid JSON:
       const app = await storage.getApplication(Number(req.params.id));
       if (!app) return res.status(404).json({ message: "Not found" });
 
-      // Issue blockchain entry automatically
       const appUser = await storage.getUser(app.userId);
       const latest = await storage.getLatestBlockchainEntry();
       const blockIndex = (latest?.blockIndex || 0) + 1;
@@ -540,36 +534,6 @@ Generate a risk assessment. Return ONLY valid JSON:
     }
   });
 
-  app.post("/api/officer/applications/:id/stage", async (req: Request, res: Response) => {
-    try {
-      const userId = getSessionUserId(req);
-      if (!userId) return res.status(401).json({ message: "Not authenticated" });
-      const user = await storage.getUser(userId);
-      if (!user || (user.role !== "officer" && user.role !== "admin")) {
-        return res.status(403).json({ message: "Forbidden" });
-      }
-      const { stage, notes } = req.body;
-      const appId = Number(req.params.id);
-      const timeline = await storage.getTimeline(appId);
-      const entry = timeline.find(t => t.stage === stage);
-      if (entry) {
-        await storage.updateTimelineEntry(entry.id, { status: "completed", completedAt: new Date(), notes });
-        const next = timeline.find(t => t.stage === stage + 1);
-        if (next) await storage.updateTimelineEntry(next.id, { status: "in_progress" });
-      }
-      const stageStatuses: Record<number, string> = {
-        1: "document_review", 2: "security_check", 3: "risk_assessment", 4: "blockchain_entry",
-      };
-      await storage.updateApplication(appId, {
-        currentStage: stage + 1,
-        status: stageStatuses[stage] || "pending",
-      });
-      res.json({ success: true });
-    } catch (e) {
-      res.status(500).json({ message: "Stage update failed" });
-    }
-  });
-
   // ── CHAT ─────────────────────────────────────────────────────────────────
   app.get("/api/chat/history", async (req: Request, res: Response) => {
     const userId = getSessionUserId(req);
@@ -591,8 +555,7 @@ Generate a risk assessment. Return ONLY valid JSON:
 
       const systemPrompt = `You are VisaBot, an intelligent AI assistant for the VisaFlow visa processing system.
 You help applicants understand visa requirements, track their application status, guide them through the renewal process, and answer questions about documentation.
-Be concise, professional, and helpful. If asked about specific application details, mention that you can help guide them but they should check their dashboard for real-time status.
-Always be empathetic and clear. Format responses with bullet points when listing multiple items.`;
+Be concise, professional, and helpful. Format responses with bullet points when listing multiple items.`;
 
       const message = await anthropic.messages.create({
         model: "claude-haiku-4-5",
@@ -646,109 +609,35 @@ Always be empathetic and clear. Format responses with bullet points when listing
     }
   });
 
-  // ── SEED ─────────────────────────────────────────────────────────────────
-  await seedData();
+  // ── ADMIN ─────────────────────────────────────────────────────────────────
+  app.get("/api/admin/users", async (req: Request, res: Response) => {
+    const userId = getSessionUserId(req);
+    if (!userId) return res.status(401).json({ message: "Not authenticated" });
+    const user = await storage.getUser(userId);
+    if (user?.role !== "admin") return res.status(403).json({ message: "Forbidden" });
+
+    // Internal direct access for admin
+    const { db } = await import("./db");
+    const { users } = await import("@shared/schema");
+    const allUsers = await db.select().from(users);
+    res.json(allUsers.map(({ password: _, ...u }) => u));
+  });
+
+  app.post("/api/admin/users/:id/role", async (req: Request, res: Response) => {
+    const userId = getSessionUserId(req);
+    if (!userId) return res.status(401).json({ message: "Not authenticated" });
+    const admin = await storage.getUser(userId);
+    if (admin?.role !== "admin") return res.status(403).json({ message: "Forbidden" });
+
+    const { role } = req.body;
+    const targetId = Number(req.params.id);
+    const { db } = await import("./db");
+    const { users } = await import("@shared/schema");
+    const { eq } = await import("drizzle-orm");
+    
+    await db.update(users).set({ role }).where(eq(users.id, targetId));
+    res.json({ success: true });
+  });
 
   return httpServer;
-}
-
-async function seedData() {
-  try {
-    const existingOfficer = await storage.getUserByEmail("officer@visaflow.gov");
-    if (existingOfficer) return;
-
-    // Create officer account
-    const officer = await storage.createUser({
-      fullName: "Sarah Chen",
-      email: "officer@visaflow.gov",
-      password: "officer123",
-      role: "officer",
-      nationality: "US",
-      phone: "+1-555-0100",
-    });
-
-    // Create demo applicant
-    const applicant = await storage.createUser({
-      fullName: "James Okafor",
-      email: "demo@example.com",
-      password: "demo123",
-      role: "applicant",
-      nationality: "Nigerian",
-      passportNumber: "A12345678",
-      dateOfBirth: "1990-05-15",
-      phone: "+234-555-0200",
-    });
-
-    // Create a granted application for demo
-    const app1 = await storage.createApplication({
-      userId: applicant.id,
-      applicationType: "new",
-      visaType: "tourist",
-      purposeOfVisit: "Tourism and sightseeing in Europe",
-      destinationCountry: "France",
-      intendedEntryDate: "2026-06-01",
-      intendedExitDate: "2026-06-21",
-    });
-
-    await Promise.all(initTimeline(app1.id));
-    await storage.updateApplication(app1.id, { riskScore: 18, riskLevel: "low", aiAnalysisSummary: "Low risk profile. Clean travel history, valid documents, sufficient financial proof.", status: "granted", currentStage: 6 });
-
-    // Issue blockchain
-    const visaNumber = `VZ2025${randomBytes(4).toString("hex").toUpperCase()}`;
-    const txId = generateTxId();
-    const blockHash = generateBlockHash(`${visaNumber}|${app1.id}`, "0000000000000000000000000000000000000000000000000000000000000000");
-    const expiryStr = "2027-06-01";
-    await storage.createBlockchainEntry({
-      applicationId: app1.id,
-      visaNumber,
-      blockHash,
-      previousHash: "0000000000000000000000000000000000000000000000000000000000000000",
-      txId,
-      blockIndex: 1,
-      holderName: applicant.fullName,
-      holderPassport: applicant.passportNumber || "A12345678",
-      visaType: "tourist",
-      expiresAt: expiryStr,
-      merkleRoot: createHash("sha256").update(`${blockHash}${txId}`).digest("hex"),
-      nonce: 423891,
-      isValid: true,
-    });
-    await storage.updateApplication(app1.id, { blockchainHash: blockHash, blockchainTxId: txId, qrCodeData: JSON.stringify({ visaNumber, hash: blockHash, txId, holder: applicant.fullName, visaType: "tourist", expiresAt: expiryStr, valid: true }), visaNumber, grantedAt: new Date(), expiryDate: expiryStr });
-
-    const timeline1 = await storage.getTimeline(app1.id);
-    for (const entry of timeline1) {
-      await storage.updateTimelineEntry(entry.id, { status: "completed", completedAt: new Date() });
-    }
-
-    // Create a pending application
-    const app2 = await storage.createApplication({
-      userId: applicant.id,
-      applicationType: "new",
-      visaType: "student",
-      purposeOfVisit: "Masters degree program at University of Toronto",
-      destinationCountry: "Canada",
-      intendedEntryDate: "2026-09-01",
-      intendedExitDate: "2027-09-01",
-    });
-
-    await Promise.all(initTimeline(app2.id));
-    await storage.updateApplication(app2.id, { status: "security_check", currentStage: 3 });
-    const timeline2 = await storage.getTimeline(app2.id);
-    const t1 = timeline2.find(t => t.stage === 1);
-    const t2 = timeline2.find(t => t.stage === 2);
-    const t3 = timeline2.find(t => t.stage === 3);
-    if (t1) await storage.updateTimelineEntry(t1.id, { status: "completed", completedAt: new Date(), notes: "All documents verified" });
-    if (t2) await storage.updateTimelineEntry(t2.id, { status: "completed", completedAt: new Date() });
-    if (t3) await storage.updateTimelineEntry(t3.id, { status: "in_progress" });
-
-    // Add some demo documents
-    const doc1 = await storage.createDocument({ applicationId: app2.id, documentType: "passport", fileName: "passport_scan.pdf", fileSize: 1024000, mimeType: "application/pdf" });
-    await storage.updateDocument(doc1.id, { verified: true, aiConfidenceScore: 0.97, aiVerificationNotes: "Passport MRZ verified. No signs of tampering.", extractedData: { name: "James Okafor", dateOfBirth: "1990-05-15", documentNumber: "A12345678", expiryDate: "2030-05-14" } });
-
-    const doc2 = await storage.createDocument({ applicationId: app2.id, documentType: "financial", fileName: "bank_statement.pdf", fileSize: 512000, mimeType: "application/pdf" });
-    await storage.updateDocument(doc2.id, { verified: true, aiConfidenceScore: 0.89, aiVerificationNotes: "Financial statements appear genuine. Sufficient funds confirmed." });
-
-  } catch (e) {
-    console.error("Seed error:", e);
-  }
 }

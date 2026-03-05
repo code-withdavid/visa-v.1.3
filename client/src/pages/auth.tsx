@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Globe, Shield, Cpu, Link2, Eye, EyeOff } from "lucide-react";
+import { Globe, Shield, Cpu, Link2, Eye, EyeOff, UserCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -38,10 +38,11 @@ const FEATURES = [
 
 export default function AuthPage() {
   const [, navigate] = useLocation();
-  const { login, register } = useAuth();
+  const { login, register, user } = useAuth();
   const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [activePortal, setActivePortal] = useState<"applicant" | "officer" | "admin">("applicant");
 
   const loginForm = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
@@ -53,11 +54,19 @@ export default function AuthPage() {
     defaultValues: { fullName: "", email: "", password: "", nationality: "", passportNumber: "", phone: "" },
   });
 
+  useEffect(() => {
+    if (user) {
+      if (user.role === "admin") navigate("/officer"); // Admin shares officer dashboard for now or has custom panel
+      else if (user.role === "officer") navigate("/officer");
+      else navigate("/dashboard");
+    }
+  }, [user, navigate]);
+
   const handleLogin = async (data: LoginForm) => {
     setIsSubmitting(true);
     try {
       await login(data.email, data.password);
-      navigate("/dashboard");
+      // Auth context handles redirection via useEffect
     } catch (e: any) {
       toast({ title: "Login Failed", description: e.message, variant: "destructive" });
     } finally {
@@ -69,7 +78,6 @@ export default function AuthPage() {
     setIsSubmitting(true);
     try {
       await register(data);
-      navigate("/dashboard");
     } catch (e: any) {
       toast({ title: "Registration Failed", description: e.message, variant: "destructive" });
     } finally {
@@ -81,7 +89,6 @@ export default function AuthPage() {
     <div className="min-h-screen flex bg-background">
       {/* Left Panel - Branding */}
       <div className="hidden lg:flex lg:w-1/2 bg-sidebar flex-col justify-between p-10 relative overflow-hidden">
-        {/* Grid background */}
         <div
           className="absolute inset-0 opacity-[0.04]"
           style={{
@@ -89,7 +96,6 @@ export default function AuthPage() {
             backgroundSize: "48px 48px",
           }}
         />
-        {/* Glow */}
         <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
 
         <div className="relative">
@@ -140,40 +146,75 @@ export default function AuthPage() {
             <span className="font-bold text-lg">VisaFlow</span>
           </div>
 
+          <div className="mb-8 text-center">
+            <h2 className="text-2xl font-bold mb-2">Login Portal</h2>
+            <div className="flex justify-center gap-2">
+              <Button 
+                variant={activePortal === "applicant" ? "default" : "outline"} 
+                size="sm" 
+                onClick={() => setActivePortal("applicant")}
+                className="text-[10px] font-mono uppercase"
+              >
+                Applicant
+              </Button>
+              <Button 
+                variant={activePortal === "officer" ? "default" : "outline"} 
+                size="sm" 
+                onClick={() => setActivePortal("officer")}
+                className="text-[10px] font-mono uppercase"
+              >
+                Officer
+              </Button>
+              <Button 
+                variant={activePortal === "admin" ? "default" : "outline"} 
+                size="sm" 
+                onClick={() => setActivePortal("admin")}
+                className="text-[10px] font-mono uppercase"
+              >
+                Admin
+              </Button>
+            </div>
+          </div>
+
           <Tabs defaultValue="login">
-            <TabsList className="w-full mb-6" data-testid="tabs-auth">
-              <TabsTrigger value="login" className="flex-1" data-testid="tab-login">Sign In</TabsTrigger>
-              <TabsTrigger value="register" className="flex-1" data-testid="tab-register">Register</TabsTrigger>
+            <TabsList className="w-full mb-6">
+              <TabsTrigger value="login" className="flex-1">Sign In</TabsTrigger>
+              {activePortal === "applicant" && (
+                <TabsTrigger value="register" className="flex-1">Register</TabsTrigger>
+              )}
             </TabsList>
 
-            {/* LOGIN */}
             <TabsContent value="login">
               <Card>
                 <CardHeader className="pb-4">
-                  <CardTitle>Welcome back</CardTitle>
-                  <CardDescription>Sign in to your VisaFlow account</CardDescription>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="capitalize">{activePortal} Access</CardTitle>
+                      <CardDescription>Secure login for {activePortal} portal</CardDescription>
+                    </div>
+                    <UserCircle className="w-8 h-8 text-primary opacity-50" />
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <Form {...loginForm}>
                     <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4">
                       <FormField control={loginForm.control} name="email" render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Email</FormLabel>
+                          <FormLabel>Portal Email</FormLabel>
                           <FormControl>
-                            <Input placeholder="your@email.com" data-testid="input-email" {...field} />
+                            <Input placeholder="your@email.com" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )} />
                       <FormField control={loginForm.control} name="password" render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Password</FormLabel>
+                          <FormLabel>Security Key</FormLabel>
                           <FormControl>
                             <div className="relative">
                               <Input
                                 type={showPassword ? "text" : "password"}
                                 placeholder="••••••••"
-                                data-testid="input-password"
                                 {...field}
                               />
                               <button
@@ -188,25 +229,32 @@ export default function AuthPage() {
                           <FormMessage />
                         </FormItem>
                       )} />
-                      <Button className="w-full" type="submit" disabled={isSubmitting} data-testid="button-login">
-                        {isSubmitting ? "Signing in..." : "Sign In"}
+                      <Button className="w-full" type="submit" disabled={isSubmitting}>
+                        {isSubmitting ? "Authenticating..." : `Access ${activePortal} Portal`}
                       </Button>
                     </form>
                   </Form>
+                  
                   <div className="mt-4 p-3 rounded-md bg-muted text-xs text-muted-foreground space-y-1">
                     <p className="font-medium text-foreground">Demo Accounts:</p>
-                    <p>Applicant: <span className="font-mono">demo@example.com</span> / <span className="font-mono">demo123</span></p>
-                    <p>Officer: <span className="font-mono">officer@visaflow.gov</span> / <span className="font-mono">officer123</span></p>
+                    {activePortal === "applicant" && (
+                      <p>Applicant: <span className="font-mono">demo@example.com</span> / <span className="font-mono">demo123</span></p>
+                    )}
+                    {activePortal === "officer" && (
+                      <p>Officer: <span className="font-mono">officer@visaflow.gov</span> / <span className="font-mono">officer123</span></p>
+                    )}
+                    {activePortal === "admin" && (
+                      <p>Admin: <span className="font-mono">admin@visaflow.gov</span> / <span className="font-mono">admin123</span> (Simulated)</p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
             </TabsContent>
 
-            {/* REGISTER */}
             <TabsContent value="register">
               <Card>
                 <CardHeader className="pb-4">
-                  <CardTitle>Create Account</CardTitle>
+                  <CardTitle>Applicant Registration</CardTitle>
                   <CardDescription>Start your visa application journey</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -216,7 +264,7 @@ export default function AuthPage() {
                         <FormItem>
                           <FormLabel>Full Name</FormLabel>
                           <FormControl>
-                            <Input placeholder="John Doe" data-testid="input-full-name" {...field} />
+                            <Input placeholder="John Doe" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -225,7 +273,7 @@ export default function AuthPage() {
                         <FormItem>
                           <FormLabel>Email</FormLabel>
                           <FormControl>
-                            <Input placeholder="your@email.com" data-testid="input-register-email" {...field} />
+                            <Input placeholder="your@email.com" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -234,7 +282,7 @@ export default function AuthPage() {
                         <FormItem>
                           <FormLabel>Password</FormLabel>
                           <FormControl>
-                            <Input type="password" placeholder="Min. 6 characters" data-testid="input-register-password" {...field} />
+                            <Input type="password" placeholder="Min. 6 characters" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -244,7 +292,7 @@ export default function AuthPage() {
                           <FormItem>
                             <FormLabel>Nationality</FormLabel>
                             <FormControl>
-                              <Input placeholder="e.g. Nigerian" data-testid="input-nationality" {...field} />
+                              <Input placeholder="e.g. Nigerian" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -253,14 +301,14 @@ export default function AuthPage() {
                           <FormItem>
                             <FormLabel>Passport No.</FormLabel>
                             <FormControl>
-                              <Input placeholder="A12345678" data-testid="input-passport" {...field} />
+                              <Input placeholder="A12345678" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
                         )} />
                       </div>
-                      <Button className="w-full" type="submit" disabled={isSubmitting} data-testid="button-register">
-                        {isSubmitting ? "Creating account..." : "Create Account"}
+                      <Button className="w-full" type="submit" disabled={isSubmitting}>
+                        {isSubmitting ? "Creating account..." : "Register Applicant"}
                       </Button>
                     </form>
                   </Form>
