@@ -1,0 +1,510 @@
+import { useState } from "react";
+import { useRoute, Link } from "wouter";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import {
+  ArrowLeft, CheckCircle2, Clock, AlertCircle, Shield, Link2, FileText,
+  Cpu, Upload, RefreshCw, QrCode, Zap, ChevronRight, Download,
+} from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Separator } from "@/components/ui/separator";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useAuth } from "@/lib/auth";
+
+interface Application {
+  id: number;
+  userId: number;
+  applicationType: string;
+  visaType: string;
+  destinationCountry: string;
+  purposeOfVisit: string;
+  status: string;
+  currentStage: number;
+  riskScore: number | null;
+  riskLevel: string | null;
+  aiAnalysisSummary: string | null;
+  blockchainHash: string | null;
+  blockchainTxId: string | null;
+  qrCodeData: string | null;
+  visaNumber: string | null;
+  grantedAt: string | null;
+  expiryDate: string | null;
+  denialReason: string | null;
+  intendedEntryDate: string | null;
+  intendedExitDate: string | null;
+  createdAt: string;
+}
+
+interface TimelineEntry {
+  id: number;
+  stage: number;
+  stageName: string;
+  status: string;
+  notes: string | null;
+  completedAt: string | null;
+}
+
+interface Document {
+  id: number;
+  documentType: string;
+  fileName: string;
+  verified: boolean;
+  aiConfidenceScore: number | null;
+  aiVerificationNotes: string | null;
+  extractedData: Record<string, any> | null;
+  uploadedAt: string;
+}
+
+const STAGE_ICONS = [FileText, Cpu, Shield, AlertCircle, Link2, CheckCircle2];
+const STAGE_COLORS = {
+  completed: "text-green-500",
+  in_progress: "text-primary",
+  pending: "text-muted-foreground",
+  failed: "text-destructive",
+};
+
+const DOC_TYPES = [
+  { value: "passport", label: "Passport" },
+  { value: "photo", label: "Passport Photo" },
+  { value: "financial", label: "Financial Documents" },
+  { value: "invitation", label: "Invitation Letter" },
+  { value: "itinerary", label: "Travel Itinerary" },
+  { value: "insurance", label: "Travel Insurance" },
+];
+
+export default function ApplicationDetail() {
+  const [, params] = useRoute("/applications/:id");
+  const appId = Number(params?.id);
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const isOfficer = user?.role === "officer" || user?.role === "admin";
+  const [selectedDocType, setSelectedDocType] = useState("passport");
+  const [uploadingDoc, setUploadingDoc] = useState(false);
+
+  const appQuery = useQuery<Application>({
+    queryKey: [`/api/applications/${appId}`],
+    refetchInterval: 5000,
+  });
+
+  const timelineQuery = useQuery<TimelineEntry[]>({
+    queryKey: [`/api/applications/${appId}/timeline`],
+    refetchInterval: 5000,
+  });
+
+  const docsQuery = useQuery<Document[]>({
+    queryKey: [`/api/applications/${appId}/documents`],
+  });
+
+  const riskMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", `/api/applications/${appId}/risk-score`);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/applications/${appId}`] });
+      toast({ title: "Risk Assessment Complete", description: "AI analysis has been completed." });
+    },
+    onError: () => toast({ title: "Error", description: "Risk assessment failed.", variant: "destructive" }),
+  });
+
+  const blockchainMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", `/api/applications/${appId}/blockchain/issue`);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/applications/${appId}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/applications/${appId}/timeline`] });
+      toast({ title: "Visa Granted!", description: "Blockchain record created successfully." });
+    },
+    onError: () => toast({ title: "Error", description: "Blockchain issuance failed.", variant: "destructive" }),
+  });
+
+  const advanceMutation = useMutation({
+    mutationFn: async (stage: number) => {
+      const res = await apiRequest("POST", `/api/applications/${appId}/advance`, { stage });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/applications/${appId}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/applications/${appId}/timeline`] });
+    },
+  });
+
+  const uploadDocument = async () => {
+    setUploadingDoc(true);
+    try {
+      const fakeFileName = `${selectedDocType}_${Date.now()}.pdf`;
+      const res = await apiRequest("POST", `/api/applications/${appId}/documents`, {
+        documentType: selectedDocType,
+        fileName: fakeFileName,
+        fileSize: Math.floor(Math.random() * 2000000) + 500000,
+        mimeType: "application/pdf",
+      });
+      if (!res.ok) throw new Error("Upload failed");
+      queryClient.invalidateQueries({ queryKey: [`/api/applications/${appId}/documents`] });
+      toast({ title: "Document Uploaded", description: `${fakeFileName} uploaded successfully.` });
+    } catch {
+      toast({ title: "Error", description: "Upload failed.", variant: "destructive" });
+    } finally {
+      setUploadingDoc(false);
+    }
+  };
+
+  const verifyDocument = async (docId: number, docType: string, fileName: string) => {
+    try {
+      const res = await apiRequest("POST", `/api/documents/${docId}/verify`, { documentType: docType, fileName });
+      if (!res.ok) throw new Error();
+      queryClient.invalidateQueries({ queryKey: [`/api/applications/${appId}/documents`] });
+      toast({ title: "Document Verified", description: "AI verification complete." });
+    } catch {
+      toast({ title: "Error", description: "Verification failed.", variant: "destructive" });
+    }
+  };
+
+  const app = appQuery.data;
+  const timeline = timelineQuery.data || [];
+  const docs = docsQuery.data || [];
+
+  const isGranted = app?.status === "granted";
+  const isDenied = app?.status === "denied";
+
+  if (appQuery.isLoading) {
+    return (
+      <div className="p-6 max-w-5xl mx-auto space-y-4">
+        <Skeleton className="h-8 w-48" />
+        <div className="grid grid-cols-3 gap-4">
+          {[1, 2, 3].map(i => <Skeleton key={i} className="h-32" />)}
+        </div>
+      </div>
+    );
+  }
+
+  if (!app) return <div className="p-6 text-center text-muted-foreground">Application not found.</div>;
+
+  const riskColor = app.riskLevel === "high" ? "text-red-500" : app.riskLevel === "medium" ? "text-yellow-500" : "text-green-500";
+
+  return (
+    <div className="p-6 max-w-5xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="flex items-start gap-3">
+        <Link href="/dashboard">
+          <Button variant="ghost" size="icon" data-testid="button-back">
+            <ArrowLeft className="w-4 h-4" />
+          </Button>
+        </Link>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h1 className="text-2xl font-bold capitalize">{app.visaType} Visa — {app.destinationCountry}</h1>
+            {isGranted && <Badge className="bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400">Granted</Badge>}
+            {isDenied && <Badge variant="destructive">Denied</Badge>}
+          </div>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Application #{app.id} • {app.applicationType === "renewal" ? "Renewal" : "New Application"} • Submitted {new Date(app.createdAt).toLocaleDateString()}
+          </p>
+        </div>
+        {app.visaNumber && (
+          <div className="text-right flex-shrink-0">
+            <p className="text-xs text-muted-foreground font-mono">Visa No.</p>
+            <p className="text-sm font-bold font-mono text-primary">{app.visaNumber}</p>
+          </div>
+        )}
+      </div>
+
+      {/* Status Timeline */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <RefreshCw className="w-4 h-4 text-primary" />
+            Application Pipeline
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-start gap-0">
+            {timeline.map((entry, idx) => {
+              const Icon = STAGE_ICONS[idx] || CheckCircle2;
+              const isCompleted = entry.status === "completed";
+              const isInProgress = entry.status === "in_progress";
+              const isFailed = entry.status === "failed";
+              const isPending = entry.status === "pending";
+              return (
+                <div key={entry.id} className="flex flex-col items-center flex-1 min-w-0">
+                  {/* Node */}
+                  <div className={`w-10 h-10 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                    isCompleted ? "border-green-500 bg-green-500/10" :
+                    isInProgress ? "border-primary bg-primary/10 pulse-glow" :
+                    isFailed ? "border-destructive bg-destructive/10" :
+                    "border-border bg-muted"
+                  }`}>
+                    <Icon className={`w-4 h-4 ${
+                      isCompleted ? "text-green-500" :
+                      isInProgress ? "text-primary" :
+                      isFailed ? "text-destructive" :
+                      "text-muted-foreground"
+                    }`} />
+                  </div>
+                  {/* Line */}
+                  {idx < timeline.length - 1 && (
+                    <div className={`h-0.5 w-full mt-4 -mb-4 ${isCompleted ? "bg-green-500" : "bg-border"}`}
+                      style={{ position: "absolute", left: "50%", width: "100%", top: "20px" }}
+                    />
+                  )}
+                  {/* Label */}
+                  <div className="mt-2 text-center px-1">
+                    <p className={`text-[10px] font-medium leading-tight ${isCompleted ? "text-green-500" : isInProgress ? "text-primary" : "text-muted-foreground"}`}>
+                      {entry.stageName}
+                    </p>
+                    {isInProgress && <p className="text-[9px] text-primary font-mono mt-0.5">IN PROGRESS</p>}
+                    {isCompleted && entry.completedAt && (
+                      <p className="text-[9px] text-muted-foreground mt-0.5">
+                        {new Date(entry.completedAt).toLocaleDateString()}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left column */}
+        <div className="lg:col-span-2 space-y-4">
+          {/* AI Risk Assessment */}
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Cpu className="w-4 h-4 text-primary" />
+                  AI Risk Assessment
+                </CardTitle>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => riskMutation.mutate()}
+                  disabled={riskMutation.isPending}
+                  data-testid="button-run-risk"
+                >
+                  {riskMutation.isPending ? "Analyzing..." : "Run Analysis"}
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {app.riskScore !== null ? (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-4">
+                    <div className="relative w-20 h-20">
+                      <svg className="w-20 h-20 -rotate-90" viewBox="0 0 36 36">
+                        <circle cx="18" cy="18" r="16" fill="none" stroke="hsl(var(--muted))" strokeWidth="3" />
+                        <circle
+                          cx="18" cy="18" r="16" fill="none"
+                          stroke={app.riskLevel === "high" ? "#ef4444" : app.riskLevel === "medium" ? "#eab308" : "#22c55e"}
+                          strokeWidth="3"
+                          strokeDasharray={`${app.riskScore} 100`}
+                          strokeLinecap="round"
+                        />
+                      </svg>
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <span className={`text-sm font-bold ${riskColor}`}>{Math.round(app.riskScore)}</span>
+                      </div>
+                    </div>
+                    <div>
+                      <p className={`text-lg font-bold capitalize ${riskColor}`}>
+                        {app.riskLevel} Risk
+                      </p>
+                      <p className="text-xs text-muted-foreground">Score out of 100</p>
+                    </div>
+                  </div>
+                  {app.aiAnalysisSummary && (
+                    <div className="p-3 rounded-md bg-muted">
+                      <p className="text-xs text-muted-foreground leading-relaxed">{app.aiAnalysisSummary}</p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-6 text-muted-foreground">
+                  <Cpu className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                  <p className="text-sm">Click "Run Analysis" to generate AI risk score</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Documents */}
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-primary" />
+                  Documents ({docs.length})
+                </CardTitle>
+                <div className="flex items-center gap-2">
+                  <select
+                    className="text-xs border border-input rounded-md px-2 py-1 bg-background"
+                    value={selectedDocType}
+                    onChange={e => setSelectedDocType(e.target.value)}
+                    data-testid="select-doc-type"
+                  >
+                    {DOC_TYPES.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
+                  </select>
+                  <Button size="sm" variant="outline" onClick={uploadDocument} disabled={uploadingDoc} data-testid="button-upload-doc">
+                    <Upload className="w-3 h-3 mr-1" />
+                    {uploadingDoc ? "Uploading..." : "Upload"}
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {docs.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <FileText className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                  <p className="text-sm">No documents uploaded yet</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {docs.map(doc => (
+                    <div key={doc.id} className="flex items-start justify-between p-3 rounded-md border gap-3" data-testid={`doc-${doc.id}`}>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-medium truncate">{doc.fileName}</span>
+                          {doc.verified ? (
+                            <Badge className="bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 text-[10px]">
+                              Verified {doc.aiConfidenceScore ? `${Math.round(doc.aiConfidenceScore * 100)}%` : ""}
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary" className="text-[10px]">Pending</Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground capitalize">{doc.documentType.replace(/_/g, " ")}</p>
+                        {doc.aiVerificationNotes && (
+                          <p className="text-xs text-muted-foreground mt-1 italic">{doc.aiVerificationNotes}</p>
+                        )}
+                      </div>
+                      {!doc.verified && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => verifyDocument(doc.id, doc.documentType, doc.fileName)}
+                          data-testid={`button-verify-${doc.id}`}
+                          className="flex-shrink-0"
+                        >
+                          <Cpu className="w-3 h-3 mr-1" />
+                          AI Verify
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Right column */}
+        <div className="space-y-4">
+          {/* Application Info */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm">Application Info</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2.5">
+              {[
+                { label: "Type", value: app.applicationType === "renewal" ? "Renewal" : "New Application" },
+                { label: "Visa Category", value: app.visaType.charAt(0).toUpperCase() + app.visaType.slice(1) },
+                { label: "Destination", value: app.destinationCountry },
+                { label: "Entry Date", value: app.intendedEntryDate || "—" },
+                { label: "Exit Date", value: app.intendedExitDate || "—" },
+                ...(app.expiryDate ? [{ label: "Visa Expiry", value: app.expiryDate }] : []),
+              ].map(item => (
+                <div key={item.label} className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">{item.label}</span>
+                  <span className="font-medium text-right">{item.value}</span>
+                </div>
+              ))}
+              <Separator />
+              <div className="text-sm">
+                <span className="text-muted-foreground">Purpose</span>
+                <p className="mt-1 text-xs">{app.purposeOfVisit}</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Blockchain Panel */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Link2 className="w-4 h-4 text-primary" />
+                Blockchain Ledger
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isGranted && app.blockchainHash ? (
+                <div className="space-y-2">
+                  <div className="p-2 rounded-md bg-green-100 dark:bg-green-900/30 flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0" />
+                    <span className="text-xs text-green-700 dark:text-green-400 font-medium">Immutable Record Created</span>
+                  </div>
+                  <div className="space-y-1.5">
+                    <div>
+                      <p className="text-[10px] text-muted-foreground font-mono uppercase">Block Hash</p>
+                      <p className="text-[11px] font-mono break-all text-foreground/80">{app.blockchainHash.slice(0, 32)}...</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-muted-foreground font-mono uppercase">TX ID</p>
+                      <p className="text-[11px] font-mono break-all text-foreground/80">{app.blockchainTxId?.slice(0, 20)}...</p>
+                    </div>
+                    {app.grantedAt && (
+                      <div>
+                        <p className="text-[10px] text-muted-foreground font-mono uppercase">Issued</p>
+                        <p className="text-[11px] font-mono">{new Date(app.grantedAt).toLocaleDateString()}</p>
+                      </div>
+                    )}
+                  </div>
+                  <div className="mt-3 p-3 rounded-md bg-muted flex items-center justify-center">
+                    <div className="text-center">
+                      <QrCode className="w-8 h-8 text-muted-foreground mx-auto mb-1" />
+                      <p className="text-[10px] text-muted-foreground">QR Code Active</p>
+                      <p className="text-[10px] text-muted-foreground font-mono">Scan to verify visa</p>
+                    </div>
+                  </div>
+                </div>
+              ) : isDenied ? (
+                <div className="text-center py-4">
+                  <AlertCircle className="w-8 h-8 text-destructive mx-auto mb-2 opacity-60" />
+                  <p className="text-xs text-muted-foreground">Application denied</p>
+                  {app.denialReason && <p className="text-xs text-destructive mt-1">{app.denialReason}</p>}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="text-center py-2">
+                    <Clock className="w-8 h-8 text-muted-foreground mx-auto mb-2 opacity-40" />
+                    <p className="text-xs text-muted-foreground">Record created when visa is granted</p>
+                  </div>
+                  {!isOfficer && (
+                    <Button
+                      size="sm"
+                      className="w-full gap-2"
+                      onClick={() => blockchainMutation.mutate()}
+                      disabled={blockchainMutation.isPending || (app.riskScore === null)}
+                      data-testid="button-issue-blockchain"
+                    >
+                      <Zap className="w-3.5 h-3.5" />
+                      {blockchainMutation.isPending ? "Issuing..." : "Issue Visa (Demo)"}
+                    </Button>
+                  )}
+                  {app.riskScore === null && !isOfficer && (
+                    <p className="text-[10px] text-muted-foreground text-center">Run risk assessment first</p>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}
