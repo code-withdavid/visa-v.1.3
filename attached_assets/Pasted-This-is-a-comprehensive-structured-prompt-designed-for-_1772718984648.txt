@@ -1,0 +1,45 @@
+This is a comprehensive, structured prompt designed for a high-level AI (like Claude Opus in Google Antigravity or Gemini 1.5 Pro) to help you architect, document, and build your specific system.
+
+It incorporates your specific tech stack (React, Python/Flask, MySQL) and your "futuristic" requirements.
+
+The Master Project Prompt
+Role: Act as a Senior Full-Stack Engineer and AI Solutions Architect.
+Project Title: Online-Based Visa Granted and Renewal Information System (Futuristic Edition).
+
+Project Context:
+I am building a final-year Computer Science project. The goal is to move away from legacy, slow, manual visa processing and create an autonomous, high-security, and AI-driven ecosystem.
+
+The Tech Stack:
+
+Frontend: React.js (Classic Minimalist UI, Component-based).
+
+Backend: Python with Flask (RESTful API).
+
+Database: MySQL (Relational data) + a simulated Blockchain layer for immutable records.
+
+AI Integration: Smart Document Verification (OCR + NLP) and a Fraud Detection Engine.
+
+The Proposed "Futuristic" System Details:
+Please generate a detailed technical breakdown for the following modules:
+
+Smart Document Verification Module: Instead of manual review, use AI to scan passports and visas, verifying authenticity and extracting data instantly into the MySQL database.
+
+AI Fraud Detection & Risk Scoring: A predictive model that analyzes applicant data to provide a "Risk Score" (Low/Medium/High) to assist immigration officers.
+
+Blockchain-Based Visa Ledger: A system where once a visa is "Granted," a unique hash is stored on a private blockchain, making the visa tamper-proof and verifiable via QR code.
+
+Autonomous Renewal & Reminder Engine: A proactive service that tracks expiry dates and uses an AI ChatBot to guide users through the renewal process before their visa expires.
+
+Real-Time Status Timeline: A React-based visual tracker (similar to a package delivery tracker) showing exactly where the application is in the "Verification -> Security Check -> Blockchain Entry -> Granted" pipeline.
+
+Requested Output:
+
+System Architecture: Describe how the React frontend communicates with the Flask backend and how the AI and Blockchain layers are sandwiched in between.
+
+Database Schema: A MySQL schema optimized for user profiles, visa history, and document versioning.
+
+API Endpoints: A list of essential Flask routes (e.g., /verify-docs, /get-risk-score, /trigger-renewal).
+
+Security Protocol: How the system ensures data privacy and prevents identity theft using "Liveness Detection."
+
+Goal: Provide a roadmap that is sophisticated enough for a final year project presentation while remaining technically feasible to implement.
