@@ -111,7 +111,6 @@ export default function ChatBot() {
             </h1>
             <div className="flex items-center gap-1.5">
               <div className="w-1.5 h-1.5 rounded-full bg-green-500 pulse-glow" />
-              <p className="text-xs text-muted-foreground">Online — Powered by Claude</p>
             </div>
           </div>
         </div>
