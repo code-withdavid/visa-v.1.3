@@ -119,30 +119,7 @@ function DocumentUploadSection({ applications }: { applications: Application[] }
     }
   };
 
-  if (!latestApp) {
-    return (
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Upload className="w-4 h-4 text-primary" />
-            Document Upload
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col items-center justify-center py-8 text-center gap-3">
-            <FileText className="w-10 h-10 text-muted-foreground/40" />
-            <p className="text-sm text-muted-foreground">Create an application first to upload documents.</p>
-            <Link href="/applications/new">
-              <Button size="sm" variant="outline" className="gap-2">
-                <FilePlus className="w-4 h-4" />
-                New Application
-              </Button>
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
+  if (!latestApp) return null;
 
   return (
     <Card>
