@@ -99,7 +99,11 @@ export default function AuthPage() {
     setIsSubmitting(true);
     try {
       await register(data);
-      toast({ title: "Registration Successful", description: "You can now access your portal." });
+      toast({ title: "Registration Successful", description: "Registration successful. Please log in." });
+      // Reset form and switch to login tab
+      registerForm.reset();
+      const tabsElement = document.querySelector('[value="login"]') as HTMLElement;
+      if (tabsElement) tabsElement.click();
     } catch (e: any) {
       toast({ title: "Registration Failed", description: e.message, variant: "destructive" });
     } finally {

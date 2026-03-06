@@ -80,9 +80,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!res.ok) {
       throw new Error(data.message || "Registration failed");
     }
-    setUser(data.user);
-    setToken(data.token);
-    localStorage.setItem("visa_token", data.token);
   };
 
   const setSession = (newUser: User, newToken: string) => {

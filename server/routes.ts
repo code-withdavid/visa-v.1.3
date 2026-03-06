@@ -92,9 +92,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         role: "applicant",
       });
 
-      const token = createSession(user.id);
-      const { password: _, ...safeUser } = user;
-      res.status(201).json({ user: safeUser, token });
+      res.status(201).json({ message: "Registration successful. Please log in." });
     } catch (e) {
       console.error(e);
       res.status(500).json({ message: "Registration failed" });
