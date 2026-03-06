@@ -96,15 +96,11 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         otpExpiresAt,
       });
 
-      const emailSent = await sendOTPEmail(email, fullName, otp);
-      const smtpConfigured = !!(process.env.SMTP_USER && process.env.SMTP_PASS);
+      await sendOTPEmail(email, fullName, otp);
       const { password: _, otpCode: __, ...safeUser } = user;
       res.status(201).json({
         user: safeUser,
         requiresVerification: true,
-        // Only expose OTP in response when SMTP is not configured (dev/demo fallback)
-        devOtp: smtpConfigured ? undefined : otp,
-        emailSent,
       });
     } catch (e) {
       console.error(e);
@@ -157,11 +153,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       await storage.updateUser(user.id, { otpCode: otp, otpExpiresAt });
       await sendOTPEmail(email, user.fullName, otp);
 
-      const smtpConfigured = !!(process.env.SMTP_USER && process.env.SMTP_PASS);
-      res.json({
-        message: smtpConfigured ? "OTP sent to your email" : "OTP generated (SMTP not configured)",
-        devOtp: smtpConfigured ? undefined : otp,
-      });
+      res.json({ message: "OTP sent to your email" });
     } catch (e) {
       console.error(e);
       res.status(500).json({ message: "Failed to resend OTP" });

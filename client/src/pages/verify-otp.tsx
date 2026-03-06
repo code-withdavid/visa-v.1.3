@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
-import { Globe, Mail, ShieldCheck, RefreshCw, ArrowLeft, CheckCircle2, Terminal } from "lucide-react";
+import { Globe, Mail, ShieldCheck, RefreshCw, ArrowLeft, CheckCircle2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,10 +11,9 @@ interface VerifyOTPProps {
   email: string;
   onSuccess: () => void;
   onBack: () => void;
-  devOtp?: string;
 }
 
-export function VerifyOTPForm({ email, onSuccess, onBack, devOtp: initialDevOtp }: VerifyOTPProps) {
+export function VerifyOTPForm({ email, onSuccess, onBack }: VerifyOTPProps) {
   const { toast } = useToast();
   const { setSession } = useAuth();
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
@@ -22,7 +21,6 @@ export function VerifyOTPForm({ email, onSuccess, onBack, devOtp: initialDevOtp 
   const [isResending, setIsResending] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(60);
   const [verified, setVerified] = useState(false);
-  const [devOtp, setDevOtp] = useState<string | undefined>(initialDevOtp);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   useEffect(() => {
@@ -59,12 +57,6 @@ export function VerifyOTPForm({ email, onSuccess, onBack, devOtp: initialDevOtp 
       inputRefs.current[5]?.focus();
     }
     e.preventDefault();
-  };
-
-  const fillFromDevOtp = () => {
-    if (devOtp && devOtp.length === 6) {
-      setOtp(devOtp.split(""));
-    }
   };
 
   const handleVerify = async () => {
@@ -109,15 +101,8 @@ export function VerifyOTPForm({ email, onSuccess, onBack, devOtp: initialDevOtp 
       if (!res.ok) throw new Error(data.message);
       setResendCooldown(60);
       setOtp(["", "", "", "", "", ""]);
-      // Update devOtp if server returns a new one (SMTP not configured)
-      if (data.devOtp) {
-        setDevOtp(data.devOtp);
-        toast({ title: "New OTP Generated", description: "Your new code is shown below." });
-      } else {
-        setDevOtp(undefined);
-        toast({ title: "OTP Resent", description: "Check your email for the new code." });
-      }
       inputRefs.current[0]?.focus();
+      toast({ title: "OTP Resent", description: "Check your email for the new code." });
     } catch (e: any) {
       toast({ title: "Failed to resend", description: e.message, variant: "destructive" });
     } finally {
@@ -140,49 +125,23 @@ export function VerifyOTPForm({ email, onSuccess, onBack, devOtp: initialDevOtp 
   return (
     <Card>
       <CardHeader className="pb-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="flex items-center gap-2">
-              <ShieldCheck className="w-5 h-5 text-primary" />
-              Email Verification
-            </CardTitle>
-            <CardDescription>
-              We sent a 6-digit OTP to{" "}
-              <span className="font-medium text-foreground">{email}</span>
-            </CardDescription>
-          </div>
-        </div>
+        <CardTitle className="flex items-center gap-2">
+          <ShieldCheck className="w-5 h-5 text-primary" />
+          Email Verification
+        </CardTitle>
+        <CardDescription>
+          We sent a 6-digit OTP to{" "}
+          <span className="font-medium text-foreground">{email}</span>
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-
-        {/* Dev mode OTP banner */}
-        {devOtp ? (
-          <div
-            className="flex items-start gap-3 p-4 rounded-md bg-amber-500/10 border border-amber-500/40 cursor-pointer hover:bg-amber-500/20 transition-colors"
-            onClick={fillFromDevOtp}
-            data-testid="dev-otp-banner"
-            title="Click to auto-fill"
-          >
-            <Terminal className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <p className="text-xs font-semibold text-amber-500 mb-1">Dev Mode — Email not configured</p>
-              <p className="text-xs text-muted-foreground mb-2">
-                SMTP is not set up yet. Your OTP is shown here instead. Click to auto-fill.
-              </p>
-              <p className="text-2xl font-mono font-bold tracking-widest text-amber-400" data-testid="dev-otp-value">
-                {devOtp}
-              </p>
-            </div>
-          </div>
-        ) : (
-          <div className="flex items-center gap-3 p-3 rounded-md bg-primary/10 border border-primary/20">
-            <Mail className="w-4 h-4 text-primary flex-shrink-0" />
-            <p className="text-xs text-muted-foreground">
-              Check your inbox and spam folder. The OTP expires in{" "}
-              <span className="text-yellow-500 font-medium">5 minutes</span>.
-            </p>
-          </div>
-        )}
+        <div className="flex items-center gap-3 p-3 rounded-md bg-primary/10 border border-primary/20">
+          <Mail className="w-4 h-4 text-primary flex-shrink-0" />
+          <p className="text-xs text-muted-foreground">
+            Check your inbox and spam folder. The OTP expires in{" "}
+            <span className="text-yellow-500 font-medium">5 minutes</span>.
+          </p>
+        </div>
 
         <div>
           <p className="text-sm font-medium mb-3 text-center">Enter your 6-digit OTP</p>
