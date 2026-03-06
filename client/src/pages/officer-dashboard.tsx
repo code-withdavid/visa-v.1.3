@@ -4,7 +4,7 @@ import { Link } from "wouter";
 import {
   Shield, Search, Users, ArrowRight, Activity,
   UserPlus, Trash2, Database, BarChart3, Globe,
-  CheckCircle2, XCircle, Clock, AlertTriangle
+  CheckCircle2, XCircle, Clock, AlertTriangle, MessageSquarePlus,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -48,6 +48,15 @@ interface UserRecord {
   createdAt: string;
 }
 
+interface FeedbackRecord {
+  id: number;
+  userId: number;
+  userName: string;
+  userEmail: string;
+  message: string;
+  createdAt: string;
+}
+
 interface Stats {
   total: number;
   pending: number;
@@ -85,6 +94,7 @@ export default function OfficerDashboard() {
   const appsQuery = useQuery<Application[]>({ queryKey: ["/api/applications/all"] });
   const usersQuery = useQuery<UserRecord[]>({ queryKey: ["/api/admin/users"], enabled: isAdmin });
   const statsQuery = useQuery<Stats>({ queryKey: ["/api/stats/overview"] });
+  const feedbackQuery = useQuery<FeedbackRecord[]>({ queryKey: ["/api/feedback"], enabled: isAdmin });
 
   const decisionMutation = useMutation({
     mutationFn: async ({ id, action, notes, reason }: { id: number; action: "grant" | "deny"; notes: string; reason?: string }) => {
@@ -202,6 +212,12 @@ export default function OfficerDashboard() {
             <TabsTrigger value="system" className="gap-2">
               <Activity className="w-4 h-4" />
               System
+            </TabsTrigger>
+          )}
+          {isAdmin && (
+            <TabsTrigger value="feedback" className="gap-2" data-testid="tab-feedback">
+              <MessageSquarePlus className="w-4 h-4" />
+              Feedback
             </TabsTrigger>
           )}
         </TabsList>
@@ -408,6 +424,64 @@ export default function OfficerDashboard() {
                         </div>
                       </div>
                     ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
+
+        {/* ── Feedback Tab (Admin only) ── */}
+        {isAdmin && (
+          <TabsContent value="feedback">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <MessageSquarePlus className="w-4 h-4 text-primary" />
+                  User Feedback
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  All feedback submitted by registered applicants.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {feedbackQuery.isLoading ? (
+                  <div className="space-y-2">
+                    {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}
+                  </div>
+                ) : !feedbackQuery.data?.length ? (
+                  <div className="text-center py-12">
+                    <MessageSquarePlus className="w-10 h-10 text-muted-foreground mx-auto mb-3 opacity-30" />
+                    <p className="text-sm text-muted-foreground">No feedback submitted yet.</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-left py-2 px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Name</th>
+                          <th className="text-left py-2 px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Email</th>
+                          <th className="text-left py-2 px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Feedback</th>
+                          <th className="text-left py-2 px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Date</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {feedbackQuery.data.map(fb => (
+                          <tr key={fb.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors" data-testid={`row-feedback-${fb.id}`}>
+                            <td className="py-3 px-3 font-medium whitespace-nowrap">{fb.userName}</td>
+                            <td className="py-3 px-3 text-muted-foreground font-mono text-xs whitespace-nowrap">{fb.userEmail}</td>
+                            <td className="py-3 px-3 max-w-xs">
+                              <p className="text-xs text-foreground/80 line-clamp-2">{fb.message}</p>
+                            </td>
+                            <td className="py-3 px-3 text-muted-foreground text-xs whitespace-nowrap">
+                              {new Date(fb.createdAt).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}
+                              <br />
+                              <span className="font-mono">{new Date(fb.createdAt).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}</span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 )}
               </CardContent>

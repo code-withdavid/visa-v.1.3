@@ -1,7 +1,7 @@
 import { useLocation, Link } from "wouter";
 import {
   LayoutDashboard, FilePlus, Shield, Link2, MessageSquareText,
-  LogOut, Sun, Moon, Globe, Users, ChevronRight, User,
+  LogOut, Sun, Moon, Globe, Users, ChevronRight, User, MessageSquarePlus,
 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
@@ -18,6 +18,7 @@ const applicantItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "New Application", url: "/applications/new", icon: FilePlus },
   { title: "AI Assistant", url: "/chat", icon: MessageSquareText },
+  { title: "Feedback", url: "/feedback", icon: MessageSquarePlus },
 ];
 
 const officerItems = [

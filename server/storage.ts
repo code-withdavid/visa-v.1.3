@@ -2,11 +2,12 @@ import bcrypt from "bcryptjs";
 import { db } from "./db";
 import { eq, desc, and } from "drizzle-orm";
 import {
-  users, visaApplications, documents, statusTimeline, chatMessages, blockchainLedger,
+  users, visaApplications, documents, statusTimeline, chatMessages, blockchainLedger, feedback,
   type User, type InsertUser,
   type VisaApplication, type InsertVisaApplication,
   type Document, type InsertDocument,
   type StatusTimeline, type ChatMessage, type BlockchainLedgerEntry,
+  type Feedback, type InsertFeedback,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -43,6 +44,10 @@ export interface IStorage {
   getAllBlockchainEntries(): Promise<BlockchainLedgerEntry[]>;
   createBlockchainEntry(entry: Omit<BlockchainLedgerEntry, "id" | "issuedAt">): Promise<BlockchainLedgerEntry>;
   getLatestBlockchainEntry(): Promise<BlockchainLedgerEntry | undefined>;
+
+  // Feedback
+  createFeedback(data: InsertFeedback): Promise<Feedback>;
+  getAllFeedback(): Promise<Feedback[]>;
 }
 
 class DatabaseStorage implements IStorage {
@@ -179,6 +184,15 @@ class DatabaseStorage implements IStorage {
       .orderBy(desc(blockchainLedger.blockIndex))
       .limit(1);
     return entry;
+  }
+
+  async createFeedback(data: InsertFeedback) {
+    const [created] = await db.insert(feedback).values(data).returning();
+    return created;
+  }
+
+  async getAllFeedback() {
+    return db.select().from(feedback).orderBy(desc(feedback.createdAt));
   }
 }
 

@@ -707,5 +707,46 @@ Be concise, professional, and helpful. Format responses with bullet points when 
     res.json({ success: true });
   });
 
+  // ── FEEDBACK ──────────────────────────────────────────────────────────────
+  app.post("/api/feedback", async (req: Request, res: Response) => {
+    try {
+      const userId = getSessionUserId(req);
+      if (!userId) return res.status(401).json({ message: "Not authenticated" });
+      const user = await storage.getUser(userId);
+      if (!user) return res.status(401).json({ message: "User not found" });
+
+      const { message } = req.body;
+      if (!message || !message.trim()) {
+        return res.status(400).json({ message: "Feedback message is required" });
+      }
+
+      const entry = await storage.createFeedback({
+        userId: user.id,
+        userName: user.fullName,
+        userEmail: user.email,
+        message: message.trim(),
+      });
+      res.status(201).json(entry);
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ message: "Failed to submit feedback" });
+    }
+  });
+
+  app.get("/api/feedback", async (req: Request, res: Response) => {
+    try {
+      const userId = getSessionUserId(req);
+      if (!userId) return res.status(401).json({ message: "Not authenticated" });
+      const user = await storage.getUser(userId);
+      if (!user || user.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      const entries = await storage.getAllFeedback();
+      res.json(entries);
+    } catch (e) {
+      res.status(500).json({ message: "Failed to fetch feedback" });
+    }
+  });
+
   return httpServer;
 }

@@ -14,6 +14,7 @@ import ApplicationDetail from "@/pages/application-detail";
 import OfficerDashboard from "@/pages/officer-dashboard";
 import BlockchainLedger from "@/pages/blockchain-ledger";
 import ChatBot from "@/pages/chatbot";
+import FeedbackPage from "@/pages/feedback";
 import NotFound from "@/pages/not-found";
 
 function ProtectedLayout() {
@@ -65,6 +66,9 @@ function ProtectedLayout() {
               {/* Common Routes */}
               <Route path="/applications/:id" component={ApplicationDetail} />
               <Route path="/chat" component={ChatBot} />
+              <Route path="/feedback">
+                {user.role === "applicant" ? <FeedbackPage /> : <Redirect to="/officer" />}
+              </Route>
               
               {/* Officer & Admin Routes */}
               <Route path="/officer">
