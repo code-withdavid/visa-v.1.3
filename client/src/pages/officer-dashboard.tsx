@@ -90,6 +90,8 @@ export default function OfficerDashboard() {
   const [actionType, setActionType] = useState<"grant" | "deny" | null>(null);
   const [actionNote, setActionNote] = useState("");
   const [denialReason, setDenialReason] = useState("");
+  const [createOfficerOpen, setCreateOfficerOpen] = useState(false);
+  const [newOfficer, setNewOfficer] = useState({ fullName: "", email: "", password: "", country: "" });
 
   const appsQuery = useQuery<Application[]>({ queryKey: ["/api/applications/all"] });
   const usersQuery = useQuery<UserRecord[]>({ queryKey: ["/api/admin/users"], enabled: isAdmin });
@@ -136,6 +138,26 @@ export default function OfficerDashboard() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
       toast({ title: "Country Assigned" });
+    },
+  });
+
+  const createOfficerMutation = useMutation({
+    mutationFn: async (data: typeof newOfficer) => {
+      const res = await apiRequest("POST", "/api/admin/officers", data);
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Failed to create officer");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      toast({ title: "Officer Created", description: `${newOfficer.fullName} has been added as an immigration officer.` });
+      setCreateOfficerOpen(false);
+      setNewOfficer({ fullName: "", email: "", password: "", country: "" });
+    },
+    onError: (e: any) => {
+      toast({ title: "Creation Failed", description: e.message, variant: "destructive" });
     },
   });
 
@@ -341,8 +363,21 @@ export default function OfficerDashboard() {
           <TabsContent value="officers">
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-base">Immigration Officers</CardTitle>
-                <CardDescription>Assign officers to countries and manage their access</CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-base">Immigration Officers</CardTitle>
+                    <CardDescription>Assign officers to countries and manage their access</CardDescription>
+                  </div>
+                  <Button
+                    size="sm"
+                    className="gap-1.5"
+                    onClick={() => setCreateOfficerOpen(true)}
+                    data-testid="button-create-officer"
+                  >
+                    <UserPlus className="w-4 h-4" />
+                    New Officer
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent className="p-0">
                 {usersQuery.isLoading ? (
@@ -600,6 +635,82 @@ export default function OfficerDashboard() {
               disabled={decisionMutation.isPending}
             >
               {decisionMutation.isPending ? "Processing…" : actionType === "grant" ? "Confirm Grant" : "Confirm Denial"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Create New Officer Dialog ── */}
+      <Dialog open={createOfficerOpen} onOpenChange={setCreateOfficerOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserPlus className="w-5 h-5 text-primary" />
+              Create New Immigration Officer
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label>Full Name</Label>
+              <Input
+                placeholder="e.g. Japan Immigration Officer"
+                value={newOfficer.fullName}
+                onChange={e => setNewOfficer(o => ({ ...o, fullName: e.target.value }))}
+                data-testid="input-officer-name"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Email Address</Label>
+              <Input
+                type="email"
+                placeholder="e.g. japan_officer@visa.com"
+                value={newOfficer.email}
+                onChange={e => setNewOfficer(o => ({ ...o, email: e.target.value }))}
+                data-testid="input-officer-email"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Password</Label>
+              <Input
+                type="password"
+                placeholder="Min. 6 characters"
+                value={newOfficer.password}
+                onChange={e => setNewOfficer(o => ({ ...o, password: e.target.value }))}
+                data-testid="input-officer-password"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Assigned Country</Label>
+              <Input
+                placeholder="e.g. Japan, Germany, Brazil…"
+                value={newOfficer.country}
+                onChange={e => setNewOfficer(o => ({ ...o, country: e.target.value }))}
+                data-testid="input-officer-country"
+              />
+              <p className="text-xs text-muted-foreground">This officer will only see visa applications for this country.</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setCreateOfficerOpen(false); setNewOfficer({ fullName: "", email: "", password: "", country: "" }); }}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (!newOfficer.fullName || !newOfficer.email || !newOfficer.password || !newOfficer.country) {
+                  toast({ title: "All fields required", description: "Please fill in every field before creating the officer.", variant: "destructive" });
+                  return;
+                }
+                if (newOfficer.password.length < 6) {
+                  toast({ title: "Password too short", description: "Password must be at least 6 characters.", variant: "destructive" });
+                  return;
+                }
+                createOfficerMutation.mutate(newOfficer);
+              }}
+              disabled={createOfficerMutation.isPending}
+              data-testid="button-confirm-create-officer"
+            >
+              <UserPlus className="w-4 h-4 mr-1.5" />
+              {createOfficerMutation.isPending ? "Creating…" : "Create Officer"}
             </Button>
           </DialogFooter>
         </DialogContent>

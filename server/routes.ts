@@ -707,6 +707,39 @@ Be concise, professional, and helpful. Format responses with bullet points when 
     res.json({ success: true });
   });
 
+  // ── CREATE OFFICER (Admin only) ───────────────────────────────────────────
+  app.post("/api/admin/officers", async (req: Request, res: Response) => {
+    try {
+      const userId = getSessionUserId(req);
+      if (!userId) return res.status(401).json({ message: "Not authenticated" });
+      const admin = await storage.getUser(userId);
+      if (admin?.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+
+      const { fullName, email, password, country } = req.body;
+      if (!fullName || !email || !password || !country) {
+        return res.status(400).json({ message: "All fields are required" });
+      }
+
+      const existing = await storage.getUserByEmail(email);
+      if (existing) return res.status(409).json({ message: "Email already registered" });
+
+      const officer = await storage.createUser({
+        fullName,
+        email,
+        password,
+        role: "officer",
+        assignedCountry: country,
+        confirmPassword: password,
+      });
+
+      const { password: _, ...safeOfficer } = officer;
+      res.status(201).json(safeOfficer);
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ message: "Failed to create officer" });
+    }
+  });
+
   // ── FEEDBACK ──────────────────────────────────────────────────────────────
   app.post("/api/feedback", async (req: Request, res: Response) => {
     try {
