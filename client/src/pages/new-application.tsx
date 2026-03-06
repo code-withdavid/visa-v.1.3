@@ -37,7 +37,7 @@ const VISA_TYPES = [
 ];
 
 const POPULAR_COUNTRIES = [
-  "USA", "China", "UK", "Canada", "Australia",
+  "USA", "China", "UK", "Canada", "Australia", "India",
   "France", "Germany", "Japan", "UAE", "Netherlands", "Spain", "Italy", "Portugal",
 ];
 

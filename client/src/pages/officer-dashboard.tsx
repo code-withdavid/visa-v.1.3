@@ -339,6 +339,7 @@ export default function OfficerDashboard() {
                               <SelectItem value="UK">UK</SelectItem>
                               <SelectItem value="Canada">Canada</SelectItem>
                               <SelectItem value="Australia">Australia</SelectItem>
+                              <SelectItem value="India">India</SelectItem>
                             </SelectContent>
                           </Select>
                         )}
