@@ -58,6 +58,7 @@ export default function AuthPage() {
 
   // OTP verification state
   const [pendingVerificationEmail, setPendingVerificationEmail] = useState<string | null>(null);
+  const [devOtp, setDevOtp] = useState<string | undefined>(undefined);
 
   const loginForm = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
@@ -106,7 +107,12 @@ export default function AuthPage() {
       const result = await register(data);
       if (result.requiresVerification) {
         setPendingVerificationEmail(result.email || data.email);
-        toast({ title: "OTP Sent!", description: `Check ${data.email} for your verification code.` });
+        setDevOtp(result.devOtp);
+        if (result.devOtp) {
+          toast({ title: "Dev Mode: OTP Shown On Screen", description: "Configure SMTP to send real emails." });
+        } else {
+          toast({ title: "OTP Sent!", description: `Check ${data.email} for your verification code.` });
+        }
       }
     } catch (e: any) {
       toast({ title: "Registration Failed", description: e.message, variant: "destructive" });
@@ -126,7 +132,8 @@ export default function AuthPage() {
           <VerifyOTPForm
             email={pendingVerificationEmail}
             onSuccess={() => navigate("/dashboard")}
-            onBack={() => setPendingVerificationEmail(null)}
+            onBack={() => { setPendingVerificationEmail(null); setDevOtp(undefined); }}
+            devOtp={devOtp}
           />
         </div>
       </div>

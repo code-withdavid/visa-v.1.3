@@ -89,7 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error(data.message || "Registration failed");
     }
     if (data.requiresVerification) {
-      return { requiresVerification: true, email: formData.email };
+      return { requiresVerification: true, email: formData.email, devOtp: data.devOtp as string | undefined };
     }
     setUser(data.user);
     setToken(data.token);
