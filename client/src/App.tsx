@@ -64,7 +64,6 @@ function ProtectedLayout() {
               
               {/* Common Routes */}
               <Route path="/applications/:id" component={ApplicationDetail} />
-              <Route path="/blockchain" component={BlockchainLedger} />
               <Route path="/chat" component={ChatBot} />
               
               {/* Officer & Admin Routes */}

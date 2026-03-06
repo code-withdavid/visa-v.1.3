@@ -18,13 +18,11 @@ const applicantItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "New Application", url: "/applications/new", icon: FilePlus },
   { title: "AI Assistant", url: "/chat", icon: MessageSquareText },
-  { title: "Blockchain Ledger", url: "/blockchain", icon: Link2 },
 ];
 
 const officerItems = [
   { title: "Officer Dashboard", url: "/officer", icon: Users },
   { title: "All Applications", url: "/dashboard", icon: LayoutDashboard },
-  { title: "Blockchain Ledger", url: "/blockchain", icon: Link2 },
 ];
 
 export function AppSidebar() {
