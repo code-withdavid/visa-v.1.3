@@ -11,7 +11,6 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
-import { VerifyOTPForm } from "./verify-otp";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email"),
@@ -22,9 +21,10 @@ const registerSchema = z.object({
   fullName: z.string().min(2, "Full name required"),
   email: z.string().email("Invalid email"),
   password: z.string().min(6, "At least 6 characters"),
-  nationality: z.string().optional(),
-  passportNumber: z.string().optional(),
-  phone: z.string().optional(),
+  confirmPassword: z.string().min(6, "At least 6 characters"),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords do not match.",
+  path: ["confirmPassword"],
 });
 
 type LoginForm = z.infer<typeof loginSchema>;
@@ -52,12 +52,9 @@ export default function AuthPage() {
   const [, navigate] = useLocation();
   const { login, register, user } = useAuth();
   const { toast } = useToast();
-  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activePortal, setActivePortal] = useState<Portal>("applicant");
-
-  // OTP verification state
-  const [pendingVerificationEmail, setPendingVerificationEmail] = useState<string | null>(null);
 
   const loginForm = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
@@ -66,7 +63,7 @@ export default function AuthPage() {
 
   const registerForm = useForm<RegisterForm>({
     resolver: zodResolver(registerSchema),
-    defaultValues: { fullName: "", email: "", password: "", nationality: "", passportNumber: "", phone: "" },
+    defaultValues: { fullName: "", email: "", password: "", confirmPassword: "" },
   });
 
   useEffect(() => {
@@ -89,10 +86,7 @@ export default function AuthPage() {
   const handleLogin = async (data: LoginForm) => {
     setIsSubmitting(true);
     try {
-      const result = await login(data.email, data.password);
-      if (result.requiresVerification) {
-        setPendingVerificationEmail(result.email || data.email);
-      }
+      await login(data.email, data.password);
     } catch (e: any) {
       toast({ title: "Login Failed", description: e.message, variant: "destructive" });
     } finally {
@@ -103,35 +97,14 @@ export default function AuthPage() {
   const handleRegister = async (data: RegisterForm) => {
     setIsSubmitting(true);
     try {
-      const result = await register(data);
-      if (result.requiresVerification) {
-        setPendingVerificationEmail(result.email || data.email);
-        toast({ title: "OTP Sent!", description: `Check ${data.email} for your verification code.` });
-      }
+      await register(data);
+      toast({ title: "Registration Successful", description: "You can now access your portal." });
     } catch (e: any) {
       toast({ title: "Registration Failed", description: e.message, variant: "destructive" });
     } finally {
       setIsSubmitting(false);
     }
   };
-
-  if (pendingVerificationEmail) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-6">
-        <div className="w-full max-w-md">
-          <div className="flex items-center gap-2 mb-8">
-            <Globe className="w-6 h-6 text-primary" />
-            <span className="font-bold text-lg">VisaFlow</span>
-          </div>
-          <VerifyOTPForm
-            email={pendingVerificationEmail}
-            onSuccess={() => navigate("/dashboard")}
-            onBack={() => setPendingVerificationEmail(null)}
-          />
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen flex bg-background">
@@ -319,7 +292,7 @@ export default function AuthPage() {
                 <CardHeader className="pb-4">
                   <CardTitle>Create Applicant Account</CardTitle>
                   <CardDescription>
-                    A 6-digit OTP will be sent to your email for verification
+                    Fill in the details below to register
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -347,39 +320,51 @@ export default function AuthPage() {
                         <FormItem>
                           <FormLabel>Password</FormLabel>
                           <FormControl>
-                            <Input type="password" placeholder="Min. 6 characters" data-testid="input-register-password" {...field} />
+                            <div className="relative">
+                              <Input
+                                type={showPassword ? "text" : "password"}
+                                placeholder="Min. 6 characters"
+                                data-testid="input-register-password"
+                                {...field}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground"
+                              >
+                                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                              </button>
+                            </div>
                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )} />
-                      <div className="grid grid-cols-2 gap-3">
-                        <FormField control={registerForm.control} name="nationality" render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Nationality</FormLabel>
-                            <FormControl>
-                              <Input placeholder="e.g. Nigerian" {...field} />
-                            </FormControl>
-                          </FormItem>
-                        )} />
-                        <FormField control={registerForm.control} name="passportNumber" render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Passport No.</FormLabel>
-                            <FormControl>
-                              <Input placeholder="A12345678" {...field} />
-                            </FormControl>
-                          </FormItem>
-                        )} />
-                      </div>
-
-                      <div className="flex items-start gap-2 p-2.5 rounded-md bg-amber-500/10 border border-amber-500/20">
-                        <Shield className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
-                        <p className="text-[11px] text-amber-600 dark:text-amber-400">
-                          After registering, a 6-digit OTP will be sent to your email. You must verify it before logging in.
-                        </p>
-                      </div>
+                      <FormField control={registerForm.control} name="confirmPassword" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Confirm Password</FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <Input
+                                type={showConfirmPassword ? "text" : "password"}
+                                placeholder="Confirm your password"
+                                data-testid="input-register-confirm-password"
+                                {...field}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground"
+                              >
+                                {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                              </button>
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
 
                       <Button className="w-full" type="submit" disabled={isSubmitting} data-testid="button-register">
-                        {isSubmitting ? "Creating account..." : "Register & Send OTP"}
+                        {isSubmitting ? "Creating account..." : "Register"}
                       </Button>
                     </form>
                   </Form>

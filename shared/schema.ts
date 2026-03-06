@@ -15,13 +15,15 @@ export const users = pgTable("users", {
   passportNumber: text("passport_number"),
   dateOfBirth: text("date_of_birth"),
   phone: text("phone"),
-  emailVerified: boolean("email_verified").default(false),
-  otpCode: text("otp_code"),
-  otpExpiresAt: timestamp("otp_expires_at"),
   createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
 
-export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
+export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true }).extend({
+  confirmPassword: z.string(),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords do not match.",
+  path: ["confirmPassword"],
+});
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 

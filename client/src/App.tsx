@@ -14,7 +14,6 @@ import ApplicationDetail from "@/pages/application-detail";
 import OfficerDashboard from "@/pages/officer-dashboard";
 import BlockchainLedger from "@/pages/blockchain-ledger";
 import ChatBot from "@/pages/chatbot";
-import VerifyOTPPage from "@/pages/verify-otp";
 import NotFound from "@/pages/not-found";
 
 function ProtectedLayout() {
@@ -96,7 +95,6 @@ function Router() {
   return (
     <Switch>
       <Route path="/auth" component={AuthPage} />
-      <Route path="/verify-otp" component={VerifyOTPPage} />
       <Route>
         <ProtectedLayout />
       </Route>

@@ -5,7 +5,6 @@ interface User {
   fullName: string;
   email: string;
   role: string;
-  emailVerified?: boolean;
   assignedCountry?: string;
   nationality?: string;
   passportNumber?: string;
@@ -16,8 +15,8 @@ interface User {
 interface AuthContextType {
   user: User | null;
   token: string | null;
-  login: (email: string, password: string) => Promise<{ requiresVerification?: boolean; email?: string }>;
-  register: (data: RegisterData) => Promise<{ requiresVerification?: boolean; email?: string }>;
+  login: (email: string, password: string) => Promise<void>;
+  register: (data: RegisterData) => Promise<void>;
   logout: () => void;
   setSession: (user: User, token: string) => void;
   isLoading: boolean;
@@ -27,10 +26,7 @@ interface RegisterData {
   fullName: string;
   email: string;
   password: string;
-  nationality?: string;
-  passportNumber?: string;
-  dateOfBirth?: string;
-  phone?: string;
+  confirmPassword: string;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -67,15 +63,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     const data = await res.json();
     if (!res.ok) {
-      if (data.requiresVerification) {
-        return { requiresVerification: true, email: data.email || email };
-      }
       throw new Error(data.message || "Login failed");
     }
     setUser(data.user);
     setToken(data.token);
     localStorage.setItem("visa_token", data.token);
-    return {};
   };
 
   const register = async (formData: RegisterData) => {
@@ -88,13 +80,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!res.ok) {
       throw new Error(data.message || "Registration failed");
     }
-    if (data.requiresVerification) {
-      return { requiresVerification: true, email: formData.email };
-    }
     setUser(data.user);
     setToken(data.token);
     localStorage.setItem("visa_token", data.token);
-    return {};
   };
 
   const setSession = (newUser: User, newToken: string) => {
