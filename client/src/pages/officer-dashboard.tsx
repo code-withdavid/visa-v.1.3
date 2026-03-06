@@ -224,8 +224,26 @@ export default function OfficerDashboard() {
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-2">
-                            {app.riskLevel && (
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {isAdmin && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => {
+                              if (window.confirm("Are you sure you want to delete this application?")) {
+                                apiRequest("DELETE", `/api/admin/applications/${app.id}`)
+                                  .then(() => {
+                                    queryClient.invalidateQueries({ queryKey: ["/api/applications/all"] });
+                                    toast({ title: "Application Deleted" });
+                                  });
+                              }
+                            }}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
+                        {app.riskLevel && (
                               <Badge variant="outline" className={`${riskColor} border-current text-[10px]`}>
                                 {app.riskLevel.toUpperCase()} RISK
                               </Badge>

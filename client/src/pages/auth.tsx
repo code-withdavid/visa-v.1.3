@@ -165,6 +165,14 @@ export default function AuthPage() {
               >
                 Immigration Officer
               </Button>
+              <Button 
+                variant={activePortal === "admin" ? "default" : "outline"} 
+                size="sm" 
+                onClick={() => setActivePortal("admin")}
+                className="text-[10px] font-mono uppercase"
+              >
+                Admin
+              </Button>
             </div>
           </div>
 

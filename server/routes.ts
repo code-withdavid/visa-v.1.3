@@ -672,5 +672,25 @@ Be concise, professional, and helpful. Format responses with bullet points when 
     res.json({ success: true });
   });
 
+  app.delete("/api/admin/applications/:id", async (req: Request, res: Response) => {
+    const userId = getSessionUserId(req);
+    if (!userId) return res.status(401).json({ message: "Not authenticated" });
+    const admin = await storage.getUser(userId);
+    if (admin?.role !== "admin") return res.status(403).json({ message: "Forbidden" });
+
+    const appId = Number(req.params.id);
+    const { db } = await import("./db");
+    const { visaApplications, documents, statusTimeline, blockchainLedger } = await import("@shared/schema");
+    const { eq } = await import("drizzle-orm");
+    
+    // Cleanup related records first
+    await db.delete(blockchainLedger).where(eq(blockchainLedger.applicationId, appId));
+    await db.delete(statusTimeline).where(eq(statusTimeline.applicationId, appId));
+    await db.delete(documents).where(eq(documents.applicationId, appId));
+    await db.delete(visaApplications).where(eq(visaApplications.id, appId));
+    
+    res.json({ success: true });
+  });
+
   return httpServer;
 }
