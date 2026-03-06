@@ -39,13 +39,6 @@ const FEATURES = [
   { icon: Globe, label: "Autonomous Renewal", desc: "AI-guided proactive reminders" },
 ];
 
-const OFFICER_ACCOUNTS: Record<string, { email: string; password: string; country: string }> = {
-  USA: { email: "usa_officer@visa.com", password: "usa123", country: "USA" },
-  China: { email: "china_officer@visa.com", password: "china123", country: "China" },
-  UK: { email: "uk_officer@visa.com", password: "uk123", country: "UK" },
-  Canada: { email: "canada_officer@visa.com", password: "canada123", country: "Canada" },
-  Australia: { email: "australia_officer@visa.com", password: "australia123", country: "Australia" },
-};
 
 export default function AuthPage() {
   const [, navigate] = useLocation();
@@ -73,15 +66,6 @@ export default function AuthPage() {
       else navigate("/dashboard");
     }
   }, [user, navigate]);
-
-  // Auto-fill officer demo credentials
-  const fillOfficerCreds = (country: string) => {
-    const acc = OFFICER_ACCOUNTS[country];
-    if (acc) {
-      loginForm.setValue("email", acc.email);
-      loginForm.setValue("password", acc.password);
-    }
-  };
 
   const handleLogin = async (data: LoginForm) => {
     setIsSubmitting(true);
@@ -268,23 +252,6 @@ export default function AuthPage() {
                         <span className="font-mono">admin@visa.com</span> /{" "}
                         <span className="font-mono">admin123</span>
                       </p>
-                    )}
-                    {activePortal === "officer" && (
-                      <div className="space-y-1">
-                        <p className="text-muted-foreground mb-2">Click a country to auto-fill:</p>
-                        <div className="flex flex-wrap gap-1.5">
-                          {Object.keys(OFFICER_ACCOUNTS).map(country => (
-                            <button
-                              key={country}
-                              type="button"
-                              onClick={() => fillOfficerCreds(country)}
-                              className="px-2 py-1 rounded bg-primary/10 text-primary hover:bg-primary/20 font-mono text-[10px] transition-colors"
-                            >
-                              {country}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
                     )}
                   </div>
                 </CardContent>
