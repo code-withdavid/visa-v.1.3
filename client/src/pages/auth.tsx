@@ -176,7 +176,7 @@ export default function AuthPage() {
                   key={p}
                   variant={activePortal === p ? "default" : "outline"}
                   size="sm"
-                  onClick={() => setActivePortal(p)}
+                  onClick={() => { setActivePortal(p); loginForm.reset(); }}
                   className="text-[10px] font-mono uppercase tracking-wider"
                   data-testid={`button-portal-${p}`}
                 >
