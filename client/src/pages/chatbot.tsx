@@ -109,9 +109,6 @@ export default function ChatBot() {
               VisaBot
               <span className="text-[10px] font-mono text-accent bg-accent/10 px-1.5 py-0.5 rounded">AI</span>
             </h1>
-            <div className="flex items-center gap-1.5">
-              <div className="w-1.5 h-1.5 rounded-full bg-green-500 pulse-glow" />
-            </div>
           </div>
         </div>
         <Button
