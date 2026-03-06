@@ -534,10 +534,7 @@ export default function ApplicationDetail() {
                 Blockchain Ledger
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              {isGranted && app.blockchainHash ? (
-                <div className="space-y-2">
-                  <div className="p-2 rounded-md bg-green-100 dark:bg-green-900/30 flex items-center gap-2">
+flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0" />
                     <span className="text-xs text-green-700 dark:text-green-400 font-medium">Immutable Record Created</span>
                   </div>
