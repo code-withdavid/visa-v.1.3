@@ -11,10 +11,11 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
+import { VerifyOTPForm } from "./verify-otp";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email"),
-  password: z.string().min(4, "Password required"),
+  password: z.string().min(1, "Password required"),
 });
 
 const registerSchema = z.object({
@@ -29,6 +30,8 @@ const registerSchema = z.object({
 type LoginForm = z.infer<typeof loginSchema>;
 type RegisterForm = z.infer<typeof registerSchema>;
 
+type Portal = "applicant" | "officer" | "admin";
+
 const FEATURES = [
   { icon: Cpu, label: "AI Document Verification", desc: "Instant OCR & authenticity check" },
   { icon: Shield, label: "Fraud Detection Engine", desc: "Real-time AI risk scoring" },
@@ -36,13 +39,25 @@ const FEATURES = [
   { icon: Globe, label: "Autonomous Renewal", desc: "AI-guided proactive reminders" },
 ];
 
+const OFFICER_ACCOUNTS: Record<string, { email: string; password: string; country: string }> = {
+  USA: { email: "usa_officer@visa.com", password: "usa123", country: "USA" },
+  China: { email: "china_officer@visa.com", password: "china123", country: "China" },
+  UK: { email: "uk_officer@visa.com", password: "uk123", country: "UK" },
+  Canada: { email: "canada_officer@visa.com", password: "canada123", country: "Canada" },
+  Australia: { email: "australia_officer@visa.com", password: "australia123", country: "Australia" },
+  India: { email: "india_officer@visa.com", password: "india123", country: "India" },
+};
+
 export default function AuthPage() {
   const [, navigate] = useLocation();
   const { login, register, user } = useAuth();
   const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [activePortal, setActivePortal] = useState<"applicant" | "officer" | "admin">("applicant");
+  const [activePortal, setActivePortal] = useState<Portal>("applicant");
+
+  // OTP verification state
+  const [pendingVerificationEmail, setPendingVerificationEmail] = useState<string | null>(null);
 
   const loginForm = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
@@ -56,17 +71,28 @@ export default function AuthPage() {
 
   useEffect(() => {
     if (user) {
-      if (user.role === "admin") navigate("/officer"); // Admin shares officer dashboard for now or has custom panel
+      if (user.role === "admin") navigate("/officer");
       else if (user.role === "officer") navigate("/officer");
       else navigate("/dashboard");
     }
   }, [user, navigate]);
 
+  // Auto-fill officer demo credentials
+  const fillOfficerCreds = (country: string) => {
+    const acc = OFFICER_ACCOUNTS[country];
+    if (acc) {
+      loginForm.setValue("email", acc.email);
+      loginForm.setValue("password", acc.password);
+    }
+  };
+
   const handleLogin = async (data: LoginForm) => {
     setIsSubmitting(true);
     try {
-      await login(data.email, data.password);
-      // Auth context handles redirection via useEffect
+      const result = await login(data.email, data.password);
+      if (result.requiresVerification) {
+        setPendingVerificationEmail(result.email || data.email);
+      }
     } catch (e: any) {
       toast({ title: "Login Failed", description: e.message, variant: "destructive" });
     } finally {
@@ -77,7 +103,11 @@ export default function AuthPage() {
   const handleRegister = async (data: RegisterForm) => {
     setIsSubmitting(true);
     try {
-      await register(data);
+      const result = await register(data);
+      if (result.requiresVerification) {
+        setPendingVerificationEmail(result.email || data.email);
+        toast({ title: "OTP Sent!", description: `Check ${data.email} for your verification code.` });
+      }
     } catch (e: any) {
       toast({ title: "Registration Failed", description: e.message, variant: "destructive" });
     } finally {
@@ -85,9 +115,27 @@ export default function AuthPage() {
     }
   };
 
+  if (pendingVerificationEmail) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-6">
+        <div className="w-full max-w-md">
+          <div className="flex items-center gap-2 mb-8">
+            <Globe className="w-6 h-6 text-primary" />
+            <span className="font-bold text-lg">VisaFlow</span>
+          </div>
+          <VerifyOTPForm
+            email={pendingVerificationEmail}
+            onSuccess={() => navigate("/dashboard")}
+            onBack={() => setPendingVerificationEmail(null)}
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex bg-background">
-      {/* Left Panel - Branding */}
+      {/* Left Panel */}
       <div className="hidden lg:flex lg:w-1/2 bg-sidebar flex-col justify-between p-10 relative overflow-hidden">
         <div
           className="absolute inset-0 opacity-[0.04]"
@@ -97,7 +145,6 @@ export default function AuthPage() {
           }}
         />
         <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
-
         <div className="relative">
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
@@ -107,7 +154,6 @@ export default function AuthPage() {
           </div>
           <p className="text-[11px] font-mono text-sidebar-foreground/40 tracking-widest uppercase">Futuristic Edition v2.0</p>
         </div>
-
         <div className="relative space-y-6">
           <div>
             <h1 className="text-3xl font-bold text-sidebar-foreground leading-tight mb-3">
@@ -131,14 +177,13 @@ export default function AuthPage() {
             ))}
           </div>
         </div>
-
         <div className="relative flex items-center gap-2">
-          <div className="h-1.5 w-1.5 rounded-full bg-green-400 pulse-glow" />
-          <span className="text-[11px] font-mono text-sidebar-foreground/40">SECURE • ENCRYPTED • ISO 27001 COMPLIANT</span>
+          <div className="h-1.5 w-1.5 rounded-full bg-green-400" />
+          <span className="text-[11px] font-mono text-sidebar-foreground/40">SECURE · ENCRYPTED · ISO 27001 COMPLIANT</span>
         </div>
       </div>
 
-      {/* Right Panel - Auth */}
+      {/* Right Panel */}
       <div className="flex-1 flex items-center justify-center p-6">
         <div className="w-full max-w-md">
           <div className="flex items-center gap-2 mb-8 lg:hidden">
@@ -146,33 +191,21 @@ export default function AuthPage() {
             <span className="font-bold text-lg">VisaFlow</span>
           </div>
 
-          <div className="mb-8 text-center">
-            <h2 className="text-2xl font-bold mb-2">Login Portal</h2>
-            <div className="flex justify-center gap-2">
-              <Button 
-                variant={activePortal === "applicant" ? "default" : "outline"} 
-                size="sm" 
-                onClick={() => setActivePortal("applicant")}
-                className="text-[10px] font-mono uppercase"
-              >
-                Applicant
-              </Button>
-              <Button 
-                variant={activePortal === "officer" ? "default" : "outline"} 
-                size="sm" 
-                onClick={() => setActivePortal("officer")}
-                className="text-[10px] font-mono uppercase"
-              >
-                Immigration Officer
-              </Button>
-              <Button 
-                variant={activePortal === "admin" ? "default" : "outline"} 
-                size="sm" 
-                onClick={() => setActivePortal("admin")}
-                className="text-[10px] font-mono uppercase"
-              >
-                Admin
-              </Button>
+          <div className="mb-6 text-center">
+            <h2 className="text-2xl font-bold mb-3">Select Portal</h2>
+            <div className="flex justify-center gap-2 flex-wrap">
+              {(["applicant", "officer", "admin"] as Portal[]).map(p => (
+                <Button
+                  key={p}
+                  variant={activePortal === p ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setActivePortal(p)}
+                  className="text-[10px] font-mono uppercase tracking-wider"
+                  data-testid={`button-portal-${p}`}
+                >
+                  {p === "officer" ? "Immigration Officer" : p}
+                </Button>
+              ))}
             </div>
           </div>
 
@@ -189,8 +222,16 @@ export default function AuthPage() {
                 <CardHeader className="pb-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <CardTitle className="capitalize">{activePortal} Access</CardTitle>
-                      <CardDescription>Secure login for {activePortal} portal</CardDescription>
+                      <CardTitle className="capitalize">
+                        {activePortal === "officer" ? "Immigration Officer" : activePortal} Access
+                      </CardTitle>
+                      <CardDescription>
+                        {activePortal === "officer"
+                          ? "Country-specific portal for immigration officers"
+                          : activePortal === "admin"
+                          ? "System administrator access only"
+                          : "Applicant secure login"}
+                      </CardDescription>
                     </div>
                     <UserCircle className="w-8 h-8 text-primary opacity-50" />
                   </div>
@@ -200,21 +241,22 @@ export default function AuthPage() {
                     <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4">
                       <FormField control={loginForm.control} name="email" render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Portal Email</FormLabel>
+                          <FormLabel>Email Address</FormLabel>
                           <FormControl>
-                            <Input placeholder="your@email.com" {...field} />
+                            <Input placeholder="your@email.com" data-testid="input-login-email" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )} />
                       <FormField control={loginForm.control} name="password" render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Security Key</FormLabel>
+                          <FormLabel>Password</FormLabel>
                           <FormControl>
                             <div className="relative">
                               <Input
                                 type={showPassword ? "text" : "password"}
                                 placeholder="••••••••"
+                                data-testid="input-login-password"
                                 {...field}
                               />
                               <button
@@ -229,22 +271,43 @@ export default function AuthPage() {
                           <FormMessage />
                         </FormItem>
                       )} />
-                      <Button className="w-full" type="submit" disabled={isSubmitting}>
-                        {isSubmitting ? "Authenticating..." : `Access ${activePortal} Portal`}
+                      <Button className="w-full" type="submit" disabled={isSubmitting} data-testid="button-login">
+                        {isSubmitting ? "Authenticating..." : `Access ${activePortal === "officer" ? "Officer" : activePortal === "admin" ? "Admin" : "Applicant"} Portal`}
                       </Button>
                     </form>
                   </Form>
-                  
-                  <div className="mt-4 p-3 rounded-md bg-muted text-xs text-muted-foreground space-y-1">
-                    <p className="font-medium text-foreground">Demo Accounts:</p>
+
+                  {/* Demo credentials panel */}
+                  <div className="mt-4 p-3 rounded-md bg-muted text-xs text-muted-foreground space-y-1.5">
+                    <p className="font-semibold text-foreground">Demo Accounts</p>
                     {activePortal === "applicant" && (
-                      <p>Applicant: <span className="font-mono">demo@example.com</span> / <span className="font-mono">demo123</span></p>
-                    )}
-                    {activePortal === "officer" && (
-                      <p>Officer: <span className="font-mono">officer@visaflow.gov</span> / <span className="font-mono">officer123</span></p>
+                      <p>
+                        <span className="font-mono">demo@example.com</span> /{" "}
+                        <span className="font-mono">demo123</span>
+                      </p>
                     )}
                     {activePortal === "admin" && (
-                      <p>Admin: <span className="font-mono">admin@visaflow.gov</span> / <span className="font-mono">admin123</span> (Simulated)</p>
+                      <p>
+                        <span className="font-mono">admin@visa.com</span> /{" "}
+                        <span className="font-mono">admin123</span>
+                      </p>
+                    )}
+                    {activePortal === "officer" && (
+                      <div className="space-y-1">
+                        <p className="text-muted-foreground mb-2">Click a country to auto-fill:</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {Object.keys(OFFICER_ACCOUNTS).map(country => (
+                            <button
+                              key={country}
+                              type="button"
+                              onClick={() => fillOfficerCreds(country)}
+                              className="px-2 py-1 rounded bg-primary/10 text-primary hover:bg-primary/20 font-mono text-[10px] transition-colors"
+                            >
+                              {country}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     )}
                   </div>
                 </CardContent>
@@ -254,8 +317,10 @@ export default function AuthPage() {
             <TabsContent value="register">
               <Card>
                 <CardHeader className="pb-4">
-                  <CardTitle>Applicant Registration</CardTitle>
-                  <CardDescription>Start your visa application journey</CardDescription>
+                  <CardTitle>Create Applicant Account</CardTitle>
+                  <CardDescription>
+                    A 6-digit OTP will be sent to your email for verification
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <Form {...registerForm}>
@@ -264,16 +329,16 @@ export default function AuthPage() {
                         <FormItem>
                           <FormLabel>Full Name</FormLabel>
                           <FormControl>
-                            <Input placeholder="John Doe" {...field} />
+                            <Input placeholder="John Doe" data-testid="input-register-name" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )} />
                       <FormField control={registerForm.control} name="email" render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Email</FormLabel>
+                          <FormLabel>Email Address</FormLabel>
                           <FormControl>
-                            <Input placeholder="your@email.com" {...field} />
+                            <Input placeholder="your@email.com" data-testid="input-register-email" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -282,7 +347,7 @@ export default function AuthPage() {
                         <FormItem>
                           <FormLabel>Password</FormLabel>
                           <FormControl>
-                            <Input type="password" placeholder="Min. 6 characters" {...field} />
+                            <Input type="password" placeholder="Min. 6 characters" data-testid="input-register-password" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -294,7 +359,6 @@ export default function AuthPage() {
                             <FormControl>
                               <Input placeholder="e.g. Nigerian" {...field} />
                             </FormControl>
-                            <FormMessage />
                           </FormItem>
                         )} />
                         <FormField control={registerForm.control} name="passportNumber" render={({ field }) => (
@@ -303,12 +367,19 @@ export default function AuthPage() {
                             <FormControl>
                               <Input placeholder="A12345678" {...field} />
                             </FormControl>
-                            <FormMessage />
                           </FormItem>
                         )} />
                       </div>
-                      <Button className="w-full" type="submit" disabled={isSubmitting}>
-                        {isSubmitting ? "Creating account..." : "Register Applicant"}
+
+                      <div className="flex items-start gap-2 p-2.5 rounded-md bg-amber-500/10 border border-amber-500/20">
+                        <Shield className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                        <p className="text-[11px] text-amber-600 dark:text-amber-400">
+                          After registering, a 6-digit OTP will be sent to your email. You must verify it before logging in.
+                        </p>
+                      </div>
+
+                      <Button className="w-full" type="submit" disabled={isSubmitting} data-testid="button-register">
+                        {isSubmitting ? "Creating account..." : "Register & Send OTP"}
                       </Button>
                     </form>
                   </Form>

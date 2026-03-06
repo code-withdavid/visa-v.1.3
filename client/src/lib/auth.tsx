@@ -5,6 +5,8 @@ interface User {
   fullName: string;
   email: string;
   role: string;
+  emailVerified?: boolean;
+  assignedCountry?: string;
   nationality?: string;
   passportNumber?: string;
   dateOfBirth?: string;
@@ -14,9 +16,10 @@ interface User {
 interface AuthContextType {
   user: User | null;
   token: string | null;
-  login: (email: string, password: string) => Promise<void>;
-  register: (data: RegisterData) => Promise<void>;
+  login: (email: string, password: string) => Promise<{ requiresVerification?: boolean; email?: string }>;
+  register: (data: RegisterData) => Promise<{ requiresVerification?: boolean; email?: string }>;
   logout: () => void;
+  setSession: (user: User, token: string) => void;
   isLoading: boolean;
 }
 
@@ -45,7 +48,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         headers: { Authorization: `Bearer ${savedToken}` },
       })
         .then(r => r.ok ? r.json() : null)
-        .then(u => { if (u) setUser(u); else { localStorage.removeItem("visa_token"); setToken(null); } })
+        .then(u => {
+          if (u) setUser(u);
+          else { localStorage.removeItem("visa_token"); setToken(null); }
+        })
         .catch(() => { localStorage.removeItem("visa_token"); setToken(null); })
         .finally(() => setIsLoading(false));
     } else {
@@ -59,14 +65,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
     });
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.message || "Login failed");
-    }
     const data = await res.json();
+    if (!res.ok) {
+      if (data.requiresVerification) {
+        return { requiresVerification: true, email: data.email || email };
+      }
+      throw new Error(data.message || "Login failed");
+    }
     setUser(data.user);
     setToken(data.token);
     localStorage.setItem("visa_token", data.token);
+    return {};
   };
 
   const register = async (formData: RegisterData) => {
@@ -75,14 +84,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(formData),
     });
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.message || "Registration failed");
-    }
     const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.message || "Registration failed");
+    }
+    if (data.requiresVerification) {
+      return { requiresVerification: true, email: formData.email };
+    }
     setUser(data.user);
     setToken(data.token);
     localStorage.setItem("visa_token", data.token);
+    return {};
+  };
+
+  const setSession = (newUser: User, newToken: string) => {
+    setUser(newUser);
+    setToken(newToken);
+    localStorage.setItem("visa_token", newToken);
   };
 
   const logout = () => {
@@ -94,7 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, register, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, token, login, register, logout, setSession, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

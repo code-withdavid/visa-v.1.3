@@ -13,6 +13,7 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  updateUser(id: number, updates: Partial<User>): Promise<User>;
 
   // Applications
   getApplication(id: number): Promise<VisaApplication | undefined>;
@@ -63,6 +64,11 @@ class DatabaseStorage implements IStorage {
       nationality: user.nationality || null,
     }).returning();
     return created;
+  }
+
+  async updateUser(id: number, updates: Partial<User>) {
+    const [updated] = await db.update(users).set(updates).where(eq(users.id, id)).returning();
+    return updated;
   }
 
   // ── Applications ───────────────────────────────────────────────────────────

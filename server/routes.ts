@@ -3,6 +3,7 @@ import type { Server } from "http";
 import { createHash, randomBytes } from "crypto";
 import Anthropic from "@anthropic-ai/sdk";
 import { storage } from "./storage";
+import { sendOTPEmail } from "./email";
 
 const anthropic = new Anthropic({
   apiKey: process.env.AI_INTEGRATIONS_ANTHROPIC_API_KEY,
@@ -64,33 +65,95 @@ function createSession(userId: number): string {
   return token;
 }
 
+function generateOTP(): string {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
 // ─── Routes ───────────────────────────────────────────────────────────────────
 export async function registerRoutes(httpServer: Server, app: Express): Promise<Server> {
   // ── AUTH ──────────────────────────────────────────────────────────────────
   app.post("/api/auth/register", async (req: Request, res: Response) => {
     try {
       const { fullName, email, password, nationality, passportNumber, dateOfBirth, phone, role } = req.body;
-      
-      // Prevent public registration of officers or admins
+
       if (role === "officer" || role === "admin") {
         return res.status(403).json({ message: "Public registration for this role is not allowed" });
       }
-
       if (!fullName || !email || !password) {
         return res.status(400).json({ message: "Full name, email, and password are required" });
       }
       const existing = await storage.getUserByEmail(email);
       if (existing) return res.status(409).json({ message: "Email already registered" });
 
+      const otp = generateOTP();
+      const otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+
       const user = await storage.createUser({
-        fullName, email, password, nationality, passportNumber, dateOfBirth, phone, role: role || "applicant",
+        fullName, email, password, nationality, passportNumber, dateOfBirth, phone,
+        role: "applicant",
+        emailVerified: false,
+        otpCode: otp,
+        otpExpiresAt,
       });
-      const token = createSession(user.id);
-      const { password: _, ...safeUser } = user;
-      res.status(201).json({ user: safeUser, token });
+
+      await sendOTPEmail(email, fullName, otp);
+      const { password: _, otpCode: __, ...safeUser } = user;
+      res.status(201).json({ user: safeUser, requiresVerification: true });
     } catch (e) {
       console.error(e);
       res.status(500).json({ message: "Registration failed" });
+    }
+  });
+
+  app.post("/api/auth/verify-otp", async (req: Request, res: Response) => {
+    try {
+      const { email, otp } = req.body;
+      if (!email || !otp) return res.status(400).json({ message: "Email and OTP are required" });
+
+      const user = await storage.getUserByEmail(email);
+      if (!user) return res.status(404).json({ message: "User not found" });
+      if (user.emailVerified) return res.status(400).json({ message: "Email already verified" });
+      if (!user.otpCode || user.otpCode !== otp) {
+        return res.status(400).json({ message: "Invalid OTP. Please check and try again." });
+      }
+      if (!user.otpExpiresAt || new Date() > new Date(user.otpExpiresAt)) {
+        return res.status(400).json({ message: "OTP has expired. Please request a new one." });
+      }
+
+      const updated = await storage.updateUser(user.id, {
+        emailVerified: true,
+        otpCode: null,
+        otpExpiresAt: null,
+      });
+
+      const token = createSession(updated.id);
+      const { password: _, otpCode: __, ...safeUser } = updated;
+      res.json({ user: safeUser, token, verified: true });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ message: "OTP verification failed" });
+    }
+  });
+
+  app.post("/api/auth/resend-otp", async (req: Request, res: Response) => {
+    try {
+      const { email } = req.body;
+      if (!email) return res.status(400).json({ message: "Email is required" });
+
+      const user = await storage.getUserByEmail(email);
+      if (!user) return res.status(404).json({ message: "User not found" });
+      if (user.emailVerified) return res.status(400).json({ message: "Email already verified" });
+
+      const otp = generateOTP();
+      const otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
+
+      await storage.updateUser(user.id, { otpCode: otp, otpExpiresAt });
+      await sendOTPEmail(email, user.fullName, otp);
+
+      res.json({ message: "OTP resent successfully" });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ message: "Failed to resend OTP" });
     }
   });
 
@@ -101,8 +164,18 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       if (!user || user.password !== password) {
         return res.status(401).json({ message: "Invalid email or password" });
       }
+
+      // Officers and admins skip OTP verification
+      if (user.role === "applicant" && !user.emailVerified) {
+        return res.status(403).json({
+          message: "Please verify your email using the OTP sent to your email.",
+          requiresVerification: true,
+          email: user.email,
+        });
+      }
+
       const token = createSession(user.id);
-      const { password: _, ...safeUser } = user;
+      const { password: _, otpCode: __, ...safeUser } = user;
       res.json({ user: safeUser, token });
     } catch (e) {
       res.status(500).json({ message: "Login failed" });

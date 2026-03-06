@@ -15,6 +15,9 @@ export const users = pgTable("users", {
   passportNumber: text("passport_number"),
   dateOfBirth: text("date_of_birth"),
   phone: text("phone"),
+  emailVerified: boolean("email_verified").default(false),
+  otpCode: text("otp_code"),
+  otpExpiresAt: timestamp("otp_expires_at"),
   createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
 

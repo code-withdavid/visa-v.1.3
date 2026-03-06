@@ -28,10 +28,16 @@ A full-stack AI-driven visa processing system with blockchain integration, real-
 
 ## Demo Accounts
 
-| Role | Email | Password |
-|------|-------|----------|
-| Applicant | demo@example.com | demo123 |
-| Officer | officer@visaflow.gov | officer123 |
+| Role | Email | Password | Country |
+|------|-------|----------|---------|
+| Applicant | demo@example.com | demo123 | — |
+| USA Officer | usa_officer@visa.com | usa123 | USA |
+| China Officer | china_officer@visa.com | china123 | China |
+| UK Officer | uk_officer@visa.com | uk123 | UK |
+| Canada Officer | canada_officer@visa.com | canada123 | Canada |
+| Australia Officer | australia_officer@visa.com | australia123 | Australia |
+| India Officer | india_officer@visa.com | india123 | India |
+| Admin | admin@visa.com | admin123 | — |
 
 ## Key Pages
 
