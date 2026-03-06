@@ -45,7 +45,6 @@ const OFFICER_ACCOUNTS: Record<string, { email: string; password: string; countr
   UK: { email: "uk_officer@visa.com", password: "uk123", country: "UK" },
   Canada: { email: "canada_officer@visa.com", password: "canada123", country: "Canada" },
   Australia: { email: "australia_officer@visa.com", password: "australia123", country: "Australia" },
-  India: { email: "india_officer@visa.com", password: "india123", country: "India" },
 };
 
 export default function AuthPage() {
