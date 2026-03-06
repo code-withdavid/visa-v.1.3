@@ -188,7 +188,7 @@ export default function AuthPage() {
 
           <Tabs defaultValue="login">
             <TabsList className="w-full mb-6">
-              <TabsTrigger value="login" className="flex-1">Sign In</TabsTrigger>
+              <TabsTrigger value="login" className="flex-1">Log In</TabsTrigger>
               {activePortal === "applicant" && (
                 <TabsTrigger value="register" className="flex-1">Register</TabsTrigger>
               )}
