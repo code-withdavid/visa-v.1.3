@@ -70,6 +70,12 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   app.post("/api/auth/register", async (req: Request, res: Response) => {
     try {
       const { fullName, email, password, nationality, passportNumber, dateOfBirth, phone, role } = req.body;
+      
+      // Prevent public registration of officers or admins
+      if (role === "officer" || role === "admin") {
+        return res.status(403).json({ message: "Public registration for this role is not allowed" });
+      }
+
       if (!fullName || !email || !password) {
         return res.status(400).json({ message: "Full name, email, and password are required" });
       }

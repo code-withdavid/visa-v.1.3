@@ -163,15 +163,7 @@ export default function AuthPage() {
                 onClick={() => setActivePortal("officer")}
                 className="text-[10px] font-mono uppercase"
               >
-                Officer
-              </Button>
-              <Button 
-                variant={activePortal === "admin" ? "default" : "outline"} 
-                size="sm" 
-                onClick={() => setActivePortal("admin")}
-                className="text-[10px] font-mono uppercase"
-              >
-                Admin
+                Immigration Officer
               </Button>
             </div>
           </div>
