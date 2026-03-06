@@ -84,6 +84,40 @@ export default function ApplicationDetail() {
   const [selectedDocType, setSelectedDocType] = useState("passport");
   const [uploadingDoc, setUploadingDoc] = useState(false);
 
+  const uploadMutation = useMutation({
+    mutationFn: async ({ type, file }: { type: string; file: File }) => {
+      // In a real app, we'd upload to S3/Storage first.
+      // For this demo, we'll simulate the upload and store metadata.
+      const res = await apiRequest("POST", `/api/applications/${appId}/documents`, {
+        documentType: type,
+        fileName: file.name,
+        fileSize: file.size,
+        mimeType: file.type,
+      });
+      return res.json();
+    },
+    onSuccess: (doc) => {
+      queryClient.invalidateQueries({ queryKey: [`/api/applications/${appId}/documents`] });
+      toast({ title: "Upload Successful", description: "Document has been uploaded and is being verified." });
+      // Trigger AI verification immediately after upload
+      verifyDocument(doc.id, doc.documentType, doc.fileName);
+    },
+  });
+
+  const handleFileChange = async (type: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingDoc(true);
+    try {
+      await uploadMutation.mutateAsync({ type, file });
+    } catch (error) {
+      toast({ title: "Upload Failed", description: "Could not upload document.", variant: "destructive" });
+    } finally {
+      setUploadingDoc(false);
+    }
+  };
+
   const appQuery = useQuery<Application>({
     queryKey: [`/api/applications/${appId}`],
     refetchInterval: 5000,
@@ -337,10 +371,70 @@ export default function ApplicationDetail() {
           {/* Documents */}
           <Card>
             <CardHeader className="pb-3">
-              <div className="flex items-center justify-between gap-2 flex-wrap">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <FileText className="w-4 h-4 text-primary" />
+                Required Documents
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                {[
+                  { id: "passport", label: "Passport", desc: "Main biodata page" },
+                  { id: "photo", label: "Photo", desc: "Digital passport photo" },
+                  { id: "financial", label: "Financial Proof", desc: "Bank statements" }
+                ].map((type) => {
+                  const existingDoc = docs.find(d => d.documentType === type.id);
+                  return (
+                    <div key={type.id} className="p-4 rounded-lg border-2 border-dashed border-muted hover:border-primary/50 transition-colors bg-muted/30">
+                      <div className="flex flex-col items-center text-center">
+                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mb-3">
+                          <Upload className="w-5 h-5 text-primary" />
+                        </div>
+                        <p className="text-sm font-semibold">{type.label}</p>
+                        <p className="text-[10px] text-muted-foreground mb-3">{type.desc}</p>
+                        
+                        {existingDoc ? (
+                          <div className="w-full space-y-2">
+                            <Badge variant="outline" className="w-full justify-center bg-green-500/10 text-green-600 border-green-500/20 text-[10px]">
+                              <CheckCircle2 className="w-3 h-3 mr-1" />
+                              Uploaded
+                            </Badge>
+                            <div className="flex items-center justify-between text-[10px]">
+                              <span className="text-muted-foreground">AI Status:</span>
+                              {existingDoc.verified ? (
+                                <span className="text-green-600 font-medium">Verified</span>
+                              ) : (
+                                <span className="text-yellow-600 font-medium">Verifying...</span>
+                              )}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="w-full">
+                            <label className="cursor-pointer block">
+                              <input
+                                type="file"
+                                className="hidden"
+                                accept="application/pdf,image/*"
+                                onChange={(e) => handleFileChange(type.id, e)}
+                                disabled={uploadingDoc}
+                              />
+                              <Button variant="outline" size="sm" className="w-full text-[10px]" disabled={uploadingDoc}>
+                                {uploadingDoc ? "Uploading..." : "Select File"}
+                              </Button>
+                            </label>
+                            <Badge variant="secondary" className="mt-2 w-full justify-center text-[10px] opacity-50">Pending</Badge>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="flex items-center justify-between gap-2 flex-wrap mb-4">
                 <CardTitle className="text-sm flex items-center gap-2">
                   <FileText className="w-4 h-4 text-primary" />
-                  Documents ({docs.length})
+                  All Documents ({docs.length})
                 </CardTitle>
                 <div className="flex items-center gap-2">
                   <select
@@ -357,8 +451,7 @@ export default function ApplicationDetail() {
                   </Button>
                 </div>
               </div>
-            </CardHeader>
-            <CardContent>
+              
               {docs.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <FileText className="w-8 h-8 mx-auto mb-2 opacity-40" />
