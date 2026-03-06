@@ -37,8 +37,8 @@ const VISA_TYPES = [
 ];
 
 const POPULAR_COUNTRIES = [
-  "United States", "United Kingdom", "France", "Germany", "Canada",
-  "Australia", "Japan", "UAE", "Netherlands", "Spain", "Italy", "Portugal",
+  "USA", "China", "UK", "Canada", "Australia",
+  "France", "Germany", "Japan", "UAE", "Netherlands", "Spain", "Italy", "Portugal",
 ];
 
 const DOCUMENT_REQUIREMENTS: Record<string, string[]> = {

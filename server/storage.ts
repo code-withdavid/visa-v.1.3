@@ -56,7 +56,12 @@ class DatabaseStorage implements IStorage {
   }
 
   async createUser(user: InsertUser) {
-    const [created] = await db.insert(users).values(user).returning();
+    const [created] = await db.insert(users).values({
+      ...user,
+      role: user.role || "applicant",
+      assignedCountry: user.assignedCountry || null,
+      nationality: user.nationality || null,
+    }).returning();
     return created;
   }
 

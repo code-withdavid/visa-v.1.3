@@ -290,11 +290,40 @@ export default function OfficerDashboard() {
                 <div className="divide-y divide-border">
                   {users.map(u => (
                     <div key={u.id} className="p-4 flex items-center justify-between">
-                      <div>
+                      <div className="flex-1 min-w-0 mr-4">
                         <p className="font-medium text-sm">{u.fullName}</p>
-                        <p className="text-xs text-muted-foreground">{u.email}</p>
+                        <p className="text-xs text-muted-foreground truncate">{u.email}</p>
+                        {u.role === "officer" && (
+                          <p className="text-[10px] font-mono text-primary mt-1">
+                            Assigned: {u.assignedCountry || "Unassigned"}
+                          </p>
+                        )}
                       </div>
                       <div className="flex items-center gap-3">
+                        {u.role === "officer" && (
+                          <Select 
+                            defaultValue={u.assignedCountry || ""} 
+                            onValueChange={(country) => {
+                              // We'll need an endpoint to update assigned country
+                              apiRequest("POST", `/api/admin/users/${u.id}/assign-country`, { country })
+                                .then(() => {
+                                  queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+                                  toast({ title: "Country Assigned" });
+                                });
+                            }}
+                          >
+                            <SelectTrigger className="w-[120px] h-8 text-xs">
+                              <SelectValue placeholder="Country" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="USA">USA</SelectItem>
+                              <SelectItem value="China">China</SelectItem>
+                              <SelectItem value="UK">UK</SelectItem>
+                              <SelectItem value="Canada">Canada</SelectItem>
+                              <SelectItem value="Australia">Australia</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        )}
                         <Select 
                           defaultValue={u.role} 
                           onValueChange={(role) => roleMutation.mutate({ id: u.id, role })}

@@ -10,6 +10,7 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   password: text("password").notNull(),
   role: text("role").notNull().default("applicant"), // "applicant" | "officer" | "admin"
+  assignedCountry: text("assigned_country"), // For officers
   nationality: text("nationality"),
   passportNumber: text("passport_number"),
   dateOfBirth: text("date_of_birth"),

@@ -134,7 +134,13 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       return res.status(403).json({ message: "Forbidden" });
     }
     const apps = await storage.getAllApplications();
-    res.json(apps);
+    
+    // Filter by assigned country for officers
+    const filteredApps = user.role === "officer" && user.assignedCountry
+      ? apps.filter(a => a.destinationCountry === user.assignedCountry)
+      : apps;
+      
+    res.json(filteredApps);
   });
 
   app.get("/api/applications/:id", async (req: Request, res: Response) => {
@@ -589,14 +595,19 @@ Be concise, professional, and helpful. Format responses with bullet points when 
     if (user?.role === "officer" || user?.role === "admin") {
       const all = await storage.getAllApplications();
       const blockchain = await storage.getAllBlockchainEntries();
+      
+      const filteredApps = user.role === "officer" && user.assignedCountry 
+        ? all.filter(a => a.destinationCountry === user.assignedCountry)
+        : all;
+
       res.json({
-        total: all.length,
-        pending: all.filter(a => a.status === "pending").length,
-        granted: all.filter(a => a.status === "granted").length,
-        denied: all.filter(a => a.status === "denied").length,
-        inReview: all.filter(a => !["pending", "granted", "denied"].includes(a.status)).length,
+        total: filteredApps.length,
+        pending: filteredApps.filter(a => a.status === "pending").length,
+        granted: filteredApps.filter(a => a.status === "granted").length,
+        denied: filteredApps.filter(a => a.status === "denied").length,
+        inReview: filteredApps.filter(a => !["pending", "granted", "denied"].includes(a.status)).length,
         blockchainEntries: blockchain.length,
-        highRisk: all.filter(a => a.riskLevel === "high").length,
+        highRisk: filteredApps.filter(a => a.riskLevel === "high").length,
       });
     } else {
       const apps = await storage.getApplicationsByUser(userId);
@@ -636,6 +647,22 @@ Be concise, professional, and helpful. Format responses with bullet points when 
     const { eq } = await import("drizzle-orm");
     
     await db.update(users).set({ role }).where(eq(users.id, targetId));
+    res.json({ success: true });
+  });
+
+  app.post("/api/admin/users/:id/assign-country", async (req: Request, res: Response) => {
+    const userId = getSessionUserId(req);
+    if (!userId) return res.status(401).json({ message: "Not authenticated" });
+    const admin = await storage.getUser(userId);
+    if (admin?.role !== "admin") return res.status(403).json({ message: "Forbidden" });
+
+    const { country } = req.body;
+    const targetId = Number(req.params.id);
+    const { db } = await import("./db");
+    const { users } = await import("@shared/schema");
+    const { eq } = await import("drizzle-orm");
+    
+    await db.update(users).set({ assignedCountry: country }).where(eq(users.id, targetId));
     res.json({ success: true });
   });
 
