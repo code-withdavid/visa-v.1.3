@@ -1,10 +1,16 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState, useRef } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { FilePlus, Clock, CheckCircle2, XCircle, AlertTriangle, ArrowRight, Shield, Cpu } from "lucide-react";
+import {
+  FilePlus, Clock, CheckCircle2, XCircle, AlertTriangle, ArrowRight,
+  Shield, Cpu, Upload, FileText, ImageIcon, Banknote, Loader2,
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/lib/auth";
 
 interface Application {
@@ -18,6 +24,19 @@ interface Application {
   riskScore: number | null;
   createdAt: string;
   expiryDate: string | null;
+}
+
+interface Document {
+  id: number;
+  applicationId: number;
+  documentType: string;
+  fileName: string;
+  fileSize: number | null;
+  mimeType: string | null;
+  verified: boolean;
+  aiConfidenceScore: number | null;
+  aiVerificationNotes: string | null;
+  uploadedAt: string;
 }
 
 interface Stats {
@@ -46,6 +65,190 @@ const RISK_CONFIG: Record<string, { label: string; color: string }> = {
   medium: { label: "Medium Risk", color: "text-yellow-600 dark:text-yellow-400" },
   high: { label: "High Risk", color: "text-red-600 dark:text-red-400" },
 };
+
+const DOC_SLOTS = [
+  { id: "passport", label: "Passport", desc: "Biodata page (PDF/Image)", icon: FileText },
+  { id: "photo", label: "Photo", desc: "Passport-size photo (Image)", icon: ImageIcon },
+  { id: "financial", label: "Financial Proof", desc: "Bank statements (PDF/Image)", icon: Banknote },
+];
+
+function DocumentUploadSection({ applications }: { applications: Application[] }) {
+  const { toast } = useToast();
+  const [uploading, setUploading] = useState<string | null>(null);
+  const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+
+  const latestApp = applications[0] ?? null;
+
+  const docsQuery = useQuery<Document[]>({
+    queryKey: ["/api/user/documents"],
+    enabled: !!latestApp,
+  });
+
+  const docs = docsQuery.data ?? [];
+
+  const uploadMutation = useMutation({
+    mutationFn: async ({ applicationId, type, file }: { applicationId: number; type: string; file: File }) => {
+      const res = await apiRequest("POST", `/api/applications/${applicationId}/documents`, {
+        documentType: type,
+        fileName: file.name,
+        fileSize: file.size,
+        mimeType: file.type,
+      });
+      if (!res.ok) throw new Error("Upload failed");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/user/documents"] });
+      toast({ title: "Document Uploaded", description: "Your document has been saved successfully." });
+    },
+    onError: () => {
+      toast({ title: "Upload Failed", description: "Could not upload the document.", variant: "destructive" });
+    },
+  });
+
+  const handleFileChange = async (type: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !latestApp) return;
+    e.target.value = "";
+
+    setUploading(type);
+    try {
+      await uploadMutation.mutateAsync({ applicationId: latestApp.id, type, file });
+    } finally {
+      setUploading(null);
+    }
+  };
+
+  if (!latestApp) {
+    return (
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Upload className="w-4 h-4 text-primary" />
+            Document Upload
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col items-center justify-center py-8 text-center gap-3">
+            <FileText className="w-10 h-10 text-muted-foreground/40" />
+            <p className="text-sm text-muted-foreground">Create an application first to upload documents.</p>
+            <Link href="/applications/new">
+              <Button size="sm" variant="outline" className="gap-2">
+                <FilePlus className="w-4 h-4" />
+                New Application
+              </Button>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Upload className="w-4 h-4 text-primary" />
+            Document Upload
+          </CardTitle>
+          <span className="text-xs text-muted-foreground font-mono">
+            Application #{latestApp.id} · {latestApp.visaType} → {latestApp.destinationCountry}
+          </span>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {DOC_SLOTS.map((slot) => {
+            const uploaded = docs.find(d => d.documentType === slot.id && d.applicationId === latestApp.id);
+            const isUploading = uploading === slot.id;
+            const Icon = slot.icon;
+
+            return (
+              <div
+                key={slot.id}
+                className="relative flex flex-col items-center text-center p-5 rounded-xl border-2 border-dashed border-muted bg-muted/20 hover:border-primary/40 hover:bg-muted/40 transition-all"
+                data-testid={`doc-slot-${slot.id}`}
+              >
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-3 ${uploaded ? "bg-green-500/10" : "bg-primary/10"}`}>
+                  {isUploading ? (
+                    <Loader2 className="w-5 h-5 text-primary animate-spin" />
+                  ) : (
+                    <Icon className={`w-5 h-5 ${uploaded ? "text-green-600 dark:text-green-400" : "text-primary"}`} />
+                  )}
+                </div>
+
+                <p className="text-sm font-semibold mb-0.5">{slot.label}</p>
+                <p className="text-[11px] text-muted-foreground mb-3 leading-tight">{slot.desc}</p>
+
+                {uploaded ? (
+                  <div className="w-full space-y-1.5">
+                    <Badge
+                      variant="outline"
+                      className="w-full justify-center gap-1 bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/30 text-[11px]"
+                      data-testid={`status-uploaded-${slot.id}`}
+                    >
+                      <CheckCircle2 className="w-3 h-3" />
+                      Uploaded
+                    </Badge>
+                    <p className="text-[10px] text-muted-foreground truncate px-1" title={uploaded.fileName}>
+                      {uploaded.fileName}
+                    </p>
+                    {uploaded.verified ? (
+                      <Badge className="w-full justify-center text-[10px] bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20" variant="outline">
+                        AI Verified {uploaded.aiConfidenceScore ? `· ${Math.round(uploaded.aiConfidenceScore * 100)}%` : ""}
+                      </Badge>
+                    ) : (
+                      <Badge variant="secondary" className="w-full justify-center text-[10px] opacity-70">
+                        Pending AI Review
+                      </Badge>
+                    )}
+                  </div>
+                ) : (
+                  <div className="w-full">
+                    <label className="block cursor-pointer">
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept="application/pdf,image/*"
+                        disabled={isUploading}
+                        ref={el => { fileInputRefs.current[slot.id] = el; }}
+                        onChange={e => handleFileChange(slot.id, e)}
+                        data-testid={`input-file-${slot.id}`}
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full text-[11px] gap-1.5 pointer-events-none"
+                        disabled={isUploading}
+                        asChild
+                      >
+                        <span>
+                          <Upload className="w-3.5 h-3.5" />
+                          {isUploading ? "Uploading..." : "Choose File"}
+                        </span>
+                      </Button>
+                    </label>
+                    <Badge
+                      variant="secondary"
+                      className="mt-2 w-full justify-center text-[10px] opacity-50"
+                      data-testid={`status-pending-${slot.id}`}
+                    >
+                      Pending
+                    </Badge>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        <p className="text-[11px] text-muted-foreground mt-3 text-center">
+          Accepted formats: PDF, JPG, PNG, WEBP · Max file size: 10 MB
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -150,6 +353,11 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         </div>
+      )}
+
+      {/* Document Upload — applicants only */}
+      {!isOfficer && (
+        <DocumentUploadSection applications={applications ?? []} />
       )}
 
       {/* Applications List */}

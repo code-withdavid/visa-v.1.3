@@ -130,6 +130,15 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     res.json({ success: true });
   });
 
+  // ── USER DOCUMENTS (cross-application) ────────────────────────────────────
+  app.get("/api/user/documents", async (req: Request, res: Response) => {
+    const userId = getSessionUserId(req);
+    if (!userId) return res.status(401).json({ message: "Not authenticated" });
+    const apps = await storage.getApplicationsByUser(userId);
+    const allDocs = await Promise.all(apps.map(a => storage.getDocumentsByApplication(a.id)));
+    res.json(allDocs.flat());
+  });
+
   // ── APPLICATIONS ──────────────────────────────────────────────────────────
   app.get("/api/applications", async (req: Request, res: Response) => {
     const userId = getSessionUserId(req);
