@@ -1,3 +1,4 @@
+import bcrypt from "bcryptjs";
 import { db } from "./db";
 import { eq, desc, and } from "drizzle-orm";
 import {
@@ -58,8 +59,10 @@ class DatabaseStorage implements IStorage {
 
   async createUser(user: any) {
     const { confirmPassword, ...userData } = user;
+    const hashedPassword = await bcrypt.hash(userData.password, 10);
     const [created] = await db.insert(users).values({
       ...userData,
+      password: hashedPassword,
       role: userData.role || "applicant",
       assignedCountry: userData.assignedCountry || null,
       nationality: userData.nationality || null,

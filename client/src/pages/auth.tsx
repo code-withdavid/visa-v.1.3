@@ -52,6 +52,7 @@ export default function AuthPage() {
   const [, navigate] = useLocation();
   const { login, register, user } = useAuth();
   const { toast } = useToast();
+  const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activePortal, setActivePortal] = useState<Portal>("applicant");

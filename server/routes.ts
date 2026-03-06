@@ -50,6 +50,8 @@ function initTimeline(applicationId: number) {
   });
 }
 
+import bcrypt from "bcryptjs";
+
 // Simple in-memory session store (demo purposes)
 const sessions: Record<string, number> = {};
 
@@ -103,7 +105,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     try {
       const { email, password } = req.body;
       const user = await storage.getUserByEmail(email);
-      if (!user || user.password !== password) {
+      if (!user || !(await bcrypt.compare(password, user.password))) {
         return res.status(401).json({ message: "Invalid email or password" });
       }
 
