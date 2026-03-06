@@ -123,17 +123,6 @@ function DocumentUploadSection({ applications }: { applications: Application[] }
 
   return (
     <Card>
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Upload className="w-4 h-4 text-primary" />
-            Document Upload
-          </CardTitle>
-          <span className="text-xs text-muted-foreground font-mono">
-            Application #{latestApp.id} · {latestApp.visaType} → {latestApp.destinationCountry}
-          </span>
-        </div>
-      </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {DOC_SLOTS.map((slot) => {
