@@ -238,22 +238,6 @@ export default function AuthPage() {
                     </form>
                   </Form>
 
-                  {/* Demo credentials panel */}
-                  <div className="mt-4 p-3 rounded-md bg-muted text-xs text-muted-foreground space-y-1.5">
-                    <p className="font-semibold text-foreground">Demo Accounts</p>
-                    {activePortal === "applicant" && (
-                      <p>
-                        <span className="font-mono">demo@example.com</span> /{" "}
-                        <span className="font-mono">demo123</span>
-                      </p>
-                    )}
-                    {activePortal === "admin" && (
-                      <p>
-                        <span className="font-mono">admin@visa.com</span> /{" "}
-                        <span className="font-mono">admin123</span>
-                      </p>
-                    )}
-                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
