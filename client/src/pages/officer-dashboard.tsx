@@ -344,6 +344,12 @@ export default function OfficerDashboard() {
                             <p className="text-xs text-muted-foreground">
                               {app.destinationCountry} · {new Date(app.createdAt).toLocaleDateString()}
                             </p>
+                            {(isAdmin || currentUser?.assignedCountry === app.destinationCountry) && app.purposeOfVisit && (
+                              <p className="text-xs text-muted-foreground mt-0.5 truncate max-w-xs">
+                                <span className="font-medium text-foreground/70">Purpose: </span>
+                                {app.purposeOfVisit}
+                              </p>
+                            )}
                           </div>
                           <div className="flex items-center gap-1.5 flex-shrink-0">
                             <Button
