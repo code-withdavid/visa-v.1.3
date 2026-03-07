@@ -22,7 +22,6 @@ const applicantItems = [
 
 const officerItems = [
   { title: "Officer Dashboard", url: "/officer", icon: Users },
-  { title: "All Applications", url: "/dashboard", icon: LayoutDashboard },
 ];
 
 export function AppSidebar() {
