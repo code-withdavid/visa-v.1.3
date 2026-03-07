@@ -161,6 +161,15 @@ export default function OfficerDashboard() {
     },
   });
 
+  const deleteOfficerMutation = useMutation({
+    mutationFn: async (id: number) => apiRequest("DELETE", `/api/admin/officers/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      toast({ title: "Officer Deleted", description: "The officer account has been removed." });
+    },
+    onError: (err: Error) => toast({ title: "Delete Failed", description: err.message, variant: "destructive" }),
+  });
+
   const verifyDocMutation = useMutation({
     mutationFn: async ({ docId, documentType, fileName }: { docId: number; documentType: string; fileName: string }) =>
       (await apiRequest("POST", `/api/documents/${docId}/verify`, { documentType, fileName })).json(),
@@ -452,6 +461,20 @@ export default function OfficerDashboard() {
                               {u.assignedCountry}
                             </Badge>
                           )}
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            disabled={deleteOfficerMutation.isPending}
+                            onClick={() => {
+                              if (confirm(`Delete officer "${u.fullName}"? This cannot be undone.`)) {
+                                deleteOfficerMutation.mutate(u.id);
+                              }
+                            }}
+                            data-testid={`button-delete-officer-${u.id}`}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
                         </div>
                       </div>
                     ))}

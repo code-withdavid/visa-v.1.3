@@ -740,6 +740,28 @@ Be concise, professional, and helpful. Format responses with bullet points when 
     }
   });
 
+  app.delete("/api/admin/officers/:id", async (req: Request, res: Response) => {
+    try {
+      const userId = getSessionUserId(req);
+      if (!userId) return res.status(401).json({ message: "Not authenticated" });
+      const admin = await storage.getUser(userId);
+      if (admin?.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+
+      const officerId = parseInt(req.params.id);
+      if (isNaN(officerId)) return res.status(400).json({ message: "Invalid officer ID" });
+      if (officerId === userId) return res.status(400).json({ message: "Cannot delete your own account" });
+
+      const officer = await storage.getUser(officerId);
+      if (!officer || officer.role !== "officer") return res.status(404).json({ message: "Officer not found" });
+
+      await storage.deleteUser(officerId);
+      res.json({ message: "Officer deleted successfully" });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ message: "Failed to delete officer" });
+    }
+  });
+
   // ── FEEDBACK ──────────────────────────────────────────────────────────────
   app.post("/api/feedback", async (req: Request, res: Response) => {
     try {

@@ -16,6 +16,7 @@ export interface IStorage {
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, updates: Partial<User>): Promise<User>;
+  deleteUser(id: number): Promise<void>;
 
   // Applications
   getApplication(id: number): Promise<VisaApplication | undefined>;
@@ -81,6 +82,10 @@ class DatabaseStorage implements IStorage {
   async updateUser(id: number, updates: Partial<User>) {
     const [updated] = await db.update(users).set(updates).where(eq(users.id, id)).returning();
     return updated;
+  }
+
+  async deleteUser(id: number): Promise<void> {
+    await db.delete(users).where(eq(users.id, id));
   }
 
   // ── Applications ───────────────────────────────────────────────────────────
