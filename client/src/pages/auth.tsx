@@ -175,7 +175,7 @@ export default function AuthPage() {
         {/* Center floating card */}
         <div className="hidden xl:flex items-center justify-center relative z-10">
           <div
-            className="w-36 h-36 rounded-2xl flex flex-col items-center justify-center gap-2 shadow-2xl"
+            className="w-36 h-36 rounded-2xl flex flex-col items-center justify-center gap-2 shadow-2xl float-wobble"
             style={{ background: "rgba(255,255,255,0.95)" }}
           >
             <div className="w-12 h-12 rounded-full flex items-center justify-center"

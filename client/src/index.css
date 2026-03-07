@@ -211,4 +211,22 @@
   }
 
   .scan-animation { animation: scan-line 2s ease-in-out infinite; }
+
+  /* Soft floating and wobble animation */
+  @keyframes float-wobble {
+    0%, 100% { 
+      transform: translateY(0px) rotateZ(0deg); 
+    }
+    25% { 
+      transform: translateY(-8px) rotateZ(0.5deg); 
+    }
+    50% { 
+      transform: translateY(-4px) rotateZ(-0.5deg); 
+    }
+    75% { 
+      transform: translateY(-6px) rotateZ(0.3deg); 
+    }
+  }
+
+  .float-wobble { animation: float-wobble 4s ease-in-out infinite; }
 }
