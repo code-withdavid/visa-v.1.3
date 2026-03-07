@@ -111,7 +111,6 @@ export default function AuthPage() {
         </div>
         <div className="hidden md:flex items-center gap-8">
           <a href="#" className="text-blue-100/70 text-sm hover:text-white transition-colors">Check Eligibility</a>
-          <a href="#" className="text-blue-100/70 text-sm hover:text-white transition-colors">My Application</a>
           <a href="#" className="text-blue-100/70 text-sm hover:text-white transition-colors">Support</a>
         </div>
         <button className="border border-white/30 text-white text-sm px-4 py-1.5 rounded-full hover:bg-white/10 transition-colors">
