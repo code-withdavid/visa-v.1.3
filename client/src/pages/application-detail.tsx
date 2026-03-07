@@ -247,7 +247,6 @@ export default function ApplicationDetail() {
           </div>
         )}
       </div>
-
       {/* Status Timeline */}
       <Card>
         <CardHeader className="pb-3">
@@ -304,7 +303,6 @@ export default function ApplicationDetail() {
           </div>
         </CardContent>
       </Card>
-
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left column */}
         <div className="lg:col-span-2 space-y-4">
@@ -438,7 +436,7 @@ export default function ApplicationDetail() {
                 </CardTitle>
                 <div className="flex items-center gap-2">
                   <select
-                    className="text-xs border border-input rounded-md px-2 py-1 bg-background"
+                    className="text-xs border border-input rounded-md px-2 py-1 bg-[#ffffff]"
                     value={selectedDocType}
                     onChange={e => setSelectedDocType(e.target.value)}
                     data-testid="select-doc-type"
