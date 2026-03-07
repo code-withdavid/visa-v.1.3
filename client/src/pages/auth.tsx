@@ -115,13 +115,13 @@ export default function AuthPage() {
       </nav>
 
       {/* Main Content */}
-      <div className="flex-1 flex items-center px-8 py-8 gap-8 relative">
+      <div className="flex-1 flex items-center px-12 lg:px-20 py-12 gap-16 relative">
         {/* Background glow */}
         <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] rounded-full blur-[120px] opacity-20"
           style={{ background: "radial-gradient(circle, #3b82f6, transparent)" }} />
 
         {/* Left — Hero */}
-        <div className="flex-1 max-w-lg relative z-10">
+        <div className="flex-1 max-w-2xl relative z-10">
           <div className="inline-flex items-center gap-2 mb-6">
             <span className="text-xs font-mono tracking-widest text-blue-200/70 border border-blue-400/30 rounded-full px-3 py-1">
               SECURE. ACCURATE. GLOBAL.
@@ -129,13 +129,13 @@ export default function AuthPage() {
             <ArrowRight className="w-3.5 h-3.5 text-blue-300/50" />
           </div>
 
-          <h1 className="text-5xl font-extrabold text-white leading-tight mb-4">
+          <h1 className="text-6xl lg:text-7xl font-extrabold text-white leading-tight mb-6">
             Your Journey<br />
             <span style={{ color: "#f59e0b" }}>Starts Online</span>
             <span className="text-white">.</span>
           </h1>
 
-          <p className="text-blue-100/60 text-sm leading-relaxed mb-8 max-w-sm">
+          <p className="text-blue-100/60 text-base leading-relaxed mb-10 max-w-lg">
             Skip the embassy. Our next-generation platform leverages AI to process visas for 190+ countries with near-instant eligibility checking.
           </p>
 
@@ -175,12 +175,12 @@ export default function AuthPage() {
         {/* Center floating card */}
         <div className="hidden xl:flex items-center justify-center relative z-10">
           <div
-            className="w-36 h-36 rounded-2xl flex flex-col items-center justify-center gap-2 shadow-2xl float-wobble"
+            className="w-48 h-48 rounded-3xl flex flex-col items-center justify-center gap-3 shadow-2xl float-wobble"
             style={{ background: "rgba(255,255,255,0.95)" }}
           >
-            <div className="w-12 h-12 rounded-full flex items-center justify-center"
+            <div className="w-14 h-14 rounded-full flex items-center justify-center"
               style={{ background: "linear-gradient(135deg, #dbeafe, #bfdbfe)" }}>
-              <Plane className="w-6 h-6 text-blue-500" />
+              <Plane className="w-7 h-7 text-blue-500" />
             </div>
             <p className="text-[9px] font-bold tracking-widest text-blue-900/70 text-center leading-tight">
               PREPARE TO<br />TRAVEL
@@ -189,7 +189,7 @@ export default function AuthPage() {
         </div>
 
         {/* Right — Login Card */}
-        <div className="relative z-10 w-full max-w-sm">
+        <div className="relative z-10 w-full max-w-lg">
           <div
             className="rounded-2xl shadow-2xl overflow-hidden"
             style={{ background: "rgba(255,255,255,0.97)", border: "1px solid rgba(255,255,255,0.3)" }}
