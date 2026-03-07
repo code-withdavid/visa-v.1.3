@@ -99,7 +99,7 @@ export default function AuthPage() {
     <div
       className="min-h-screen flex flex-col overflow-x-hidden"
       style={{
-        background: "linear-gradient(135deg, #0a1a35 0%, #0d2557 35%, #1a3a90 70%, #2d5fc7 100%)",
+        background: "linear-gradient(165deg, #0a0f3c 0%, #131c70 28%, #253da0 60%, #3d52c4 85%, #5060c8 100%)",
       }}
     >
       {/* Top Navigation */}

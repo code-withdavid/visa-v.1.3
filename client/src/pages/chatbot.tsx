@@ -99,7 +99,7 @@ export default function ChatBot() {
   return (
     <div className="h-[calc(100vh-3rem)] flex flex-col">
       {/* Header */}
-      <div className="px-6 py-4 flex items-center justify-between backdrop-blur-md" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)", background: "rgba(10,26,53,0.7)" }}>
+      <div className="px-6 py-4 flex items-center justify-between backdrop-blur-md" style={{ borderBottom: "1px solid rgba(255,255,255,0.09)", background: "rgba(10,14,60,0.72)" }}>
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-full bg-blue-500/20 flex items-center justify-center border border-blue-400/20">
             <Bot className="w-5 h-5 text-blue-300" />
@@ -133,8 +133,8 @@ export default function ChatBot() {
               <Sparkles className="w-8 h-8 text-accent" />
             </div>
             <div>
-              <h2 className="font-bold text-lg">Hello! I'm VisaBot</h2>
-              <p className="text-muted-foreground text-sm mt-1 max-w-sm">
+              <h2 className="font-bold text-lg text-white">Hello! I'm VisaBot</h2>
+              <p className="text-blue-200/60 text-sm mt-1 max-w-sm">
                 I'm your AI visa assistant. Ask me anything about visa applications, requirements, renewals, or the processing system.
               </p>
             </div>
@@ -143,7 +143,7 @@ export default function ChatBot() {
                 <button
                   key={p}
                   onClick={() => { setInput(p); }}
-                  className="text-left text-xs p-3 rounded-md border border-border bg-card hover-elevate transition-all"
+                  className="text-left text-xs p-3 rounded-lg border border-white/15 bg-white/8 hover:bg-white/12 text-white/70 hover:text-white transition-all"
                   data-testid={`quick-prompt-${p.slice(0, 20).replace(/\s/g, "-")}`}
                 >
                   {p}
@@ -188,12 +188,12 @@ export default function ChatBot() {
 
       {/* Quick prompts (when messages exist) */}
       {messages.length > 0 && (
-        <div className="px-4 pb-2 flex gap-2 overflow-x-auto scrollbar-hide">
+        <div className="px-4 pb-2 flex gap-2 overflow-x-auto scrollbar-hide" style={{ background: "rgba(10,14,60,0.72)" }}>
           {QUICK_PROMPTS.slice(0, 4).map(p => (
             <button
               key={p}
               onClick={() => setInput(p)}
-              className="flex-shrink-0 text-[11px] px-2.5 py-1 rounded-full border border-border bg-background hover-elevate transition-all whitespace-nowrap"
+              className="flex-shrink-0 text-[11px] px-2.5 py-1 rounded-full border border-white/15 bg-white/8 hover:bg-white/12 transition-all whitespace-nowrap text-white/65 hover:text-white/90"
             >
               {p.length > 35 ? p.slice(0, 35) + "..." : p}
             </button>
@@ -202,7 +202,7 @@ export default function ChatBot() {
       )}
 
       {/* Input */}
-      <div className="p-4 border-t bg-background">
+      <div className="p-4 backdrop-blur-sm" style={{ borderTop: "1px solid rgba(255,255,255,0.09)", background: "rgba(10,14,60,0.85)" }}>
         <div className="flex gap-2 items-end max-w-4xl mx-auto">
           <Textarea
             placeholder="Ask VisaBot anything about visa applications..."

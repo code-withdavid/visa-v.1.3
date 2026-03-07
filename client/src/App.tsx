@@ -43,7 +43,7 @@ function ProtectedLayout() {
       <div className="flex h-screen w-full overflow-hidden">
         <AppSidebar />
         <div className="flex flex-col flex-1 min-w-0">
-          <header className="flex items-center justify-between px-4 py-2 sticky top-0 z-50 h-12 backdrop-blur-md" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)", background: "rgba(10,26,53,0.7)" }}>
+          <header className="flex items-center justify-between px-4 py-2 sticky top-0 z-50 h-12 backdrop-blur-md" style={{ borderBottom: "1px solid rgba(255,255,255,0.09)", background: "rgba(10,14,60,0.72)" }}>
             <SidebarTrigger data-testid="button-sidebar-toggle" className="-ml-1 text-white/70 hover:text-white" />
             <div className="flex items-center gap-2">
               <div className="h-2 w-2 rounded-full bg-green-400 pulse-glow" />

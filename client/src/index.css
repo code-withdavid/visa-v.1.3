@@ -2,47 +2,47 @@
 @tailwind components;
 @tailwind utilities;
 
-/* LIGHT MODE — Dark Blue Theme (matches login page gradient) */
+/* LIGHT MODE — Landscape Palette (deep navy → indigo → blue-purple → white cards) */
 :root {
-  --button-outline: rgba(255,255,255, .12);
-  --badge-outline: rgba(255,255,255, .08);
-  --opaque-button-border-intensity: 9;
+  --button-outline: rgba(255,255,255, .14);
+  --badge-outline: rgba(255,255,255, .10);
+  --opaque-button-border-intensity: 10;
   --elevate-1: rgba(255,255,255, .04);
-  --elevate-2: rgba(255,255,255, .08);
+  --elevate-2: rgba(255,255,255, .09);
 
-  --background: 220 60% 8%;
-  --foreground: 210 25% 94%;
-  --border: 215 20% 82%;
+  --background: 234 72% 8%;
+  --foreground: 222 45% 95%;
+  --border: 222 30% 83%;
   --card: 0 0% 100%;
-  --card-foreground: 220 40% 12%;
-  --card-border: 215 20% 88%;
-  --sidebar: 220 55% 7%;
-  --sidebar-foreground: 215 20% 90%;
-  --sidebar-border: 220 35% 16%;
-  --sidebar-primary: 210 100% 58%;
-  --sidebar-primary-foreground: 220 40% 8%;
-  --sidebar-accent: 220 40% 14%;
-  --sidebar-accent-foreground: 215 20% 90%;
-  --sidebar-ring: 210 100% 58%;
+  --card-foreground: 234 50% 14%;
+  --card-border: 222 25% 88%;
+  --sidebar: 234 78% 6%;
+  --sidebar-foreground: 222 35% 90%;
+  --sidebar-border: 234 55% 13%;
+  --sidebar-primary: 234 62% 62%;
+  --sidebar-primary-foreground: 234 78% 6%;
+  --sidebar-accent: 234 58% 16%;
+  --sidebar-accent-foreground: 222 35% 90%;
+  --sidebar-ring: 234 62% 62%;
   --popover: 0 0% 100%;
-  --popover-foreground: 220 40% 12%;
-  --popover-border: 215 20% 85%;
-  --primary: 210 100% 55%;
+  --popover-foreground: 234 50% 14%;
+  --popover-border: 222 25% 85%;
+  --primary: 234 62% 57%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 215 20% 88%;
-  --secondary-foreground: 220 40% 20%;
-  --muted: 215 25% 90%;
-  --muted-foreground: 215 18% 55%;
-  --accent: 210 100% 55%;
+  --secondary: 222 28% 88%;
+  --secondary-foreground: 234 50% 20%;
+  --muted: 222 25% 91%;
+  --muted-foreground: 222 18% 52%;
+  --accent: 234 62% 57%;
   --accent-foreground: 0 0% 100%;
   --destructive: 0 72% 51%;
   --destructive-foreground: 0 0% 100%;
-  --input: 215 20% 82%;
-  --ring: 210 100% 55%;
-  --chart-1: 210 100% 45%;
-  --chart-2: 185 80% 40%;
-  --chart-3: 142 72% 40%;
-  --chart-4: 38 92% 50%;
+  --input: 222 22% 84%;
+  --ring: 234 62% 57%;
+  --chart-1: 234 62% 55%;
+  --chart-2: 185 70% 42%;
+  --chart-3: 142 68% 42%;
+  --chart-4: 38 88% 52%;
   --chart-5: 0 72% 51%;
 
   --font-sans: 'Inter', sans-serif;
@@ -132,7 +132,7 @@
   * { @apply border-border; }
   body {
     @apply font-sans antialiased text-foreground;
-    background: linear-gradient(135deg, #0a1a35 0%, #0d2557 35%, #1a3a90 70%, #2d5fc7 100%);
+    background: linear-gradient(165deg, #0a0f3c 0%, #131c70 28%, #253da0 60%, #3d52c4 85%, #5060c8 100%);
     background-attachment: fixed;
     min-height: 100vh;
   }
