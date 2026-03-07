@@ -99,26 +99,28 @@ export default function AuthPage() {
     <div
       className="min-h-screen flex flex-col overflow-x-hidden"
       style={{
-        background: "linear-gradient(135deg, #0b1d3a 0%, #0d2257 40%, #1a3a8f 100%)",
+        background: "linear-gradient(135deg, #0a1a35 0%, #0d2557 35%, #1a3a90 70%, #2d5fc7 100%)",
       }}
     >
       {/* Top Navigation */}
-      <nav className="flex items-center justify-between px-8 py-4 relative z-10">
+      <nav className="flex items-center justify-between px-8 py-5 relative z-10 backdrop-blur-md">
         <div className="flex items-center gap-2">
           <Globe className="w-5 h-5 text-white" />
           <span className="text-white font-bold text-lg tracking-tight">VisaFlow</span>
-          <span className="text-blue-300/60 text-xs ml-1 font-mono">v2.0</span>
+          <span className="text-blue-200/50 text-xs ml-1 font-mono">v2.0</span>
         </div>
-        <button className="border border-white/30 text-white text-sm px-4 py-1.5 rounded-full hover:bg-white/10 transition-colors">
+        <button className="border border-white/20 text-white text-sm px-5 py-2 rounded-full hover:bg-white/10 transition-all duration-300 backdrop-blur-sm">
           Get Help
         </button>
       </nav>
 
       {/* Main Content */}
-      <div className="flex-1 flex items-center px-12 lg:px-20 py-12 gap-16 relative">
-        {/* Background glow */}
-        <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] rounded-full blur-[120px] opacity-20"
-          style={{ background: "radial-gradient(circle, #3b82f6, transparent)" }} />
+      <div className="flex-1 flex items-center px-12 lg:px-20 py-16 gap-20 relative">
+        {/* Background glow elements */}
+        <div className="absolute top-1/3 -left-1/4 w-[600px] h-[600px] rounded-full blur-[130px] opacity-15"
+          style={{ background: "radial-gradient(circle, #60a5fa, transparent)" }} />
+        <div className="absolute bottom-1/4 right-0 w-[500px] h-[500px] rounded-full blur-[120px] opacity-10"
+          style={{ background: "radial-gradient(circle, #93c5fd, transparent)" }} />
 
         {/* Left — Hero */}
         <div className="flex-1 max-w-2xl relative z-10">
@@ -129,44 +131,44 @@ export default function AuthPage() {
             <ArrowRight className="w-3.5 h-3.5 text-blue-300/50" />
           </div>
 
-          <h1 className="text-6xl lg:text-7xl font-extrabold text-white leading-tight mb-6">
+          <h1 className="text-7xl lg:text-8xl font-black text-white leading-tight mb-8" style={{ letterSpacing: "-1px" }}>
             Your Journey<br />
-            <span style={{ color: "#f59e0b" }}>Starts Online</span>
+            <span style={{ color: "#fbbf24", display: "inline-block" }}>Starts Online</span>
             <span className="text-white">.</span>
           </h1>
 
-          <p className="text-blue-100/60 text-base leading-relaxed mb-10 max-w-lg">
+          <p className="text-blue-100/70 text-lg leading-relaxed mb-12 max-w-lg font-light">
             Skip the embassy. Our next-generation platform leverages AI to process visas for 190+ countries with near-instant eligibility checking.
           </p>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-4">
             {FEATURES.slice(0, 2).map((f) => (
               <div
                 key={f.label}
-                className="flex items-center gap-3 p-3 rounded-xl"
-                style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)" }}
+                className="flex items-center gap-3 p-4 rounded-2xl backdrop-blur-sm transition-all duration-300 hover:bg-white/10"
+                style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)" }}
               >
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                  style={{ background: "rgba(59,130,246,0.25)" }}>
-                  <f.icon className="w-4 h-4 text-blue-300" />
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 transition-transform duration-300"
+                  style={{ background: "rgba(96,165,250,0.2)" }}>
+                  <f.icon className="w-5 h-5 text-blue-200" />
                 </div>
                 <div>
-                  <p className="text-white text-xs font-semibold">{f.label}</p>
-                  <p className="text-blue-200/50 text-[11px]">{f.desc}</p>
+                  <p className="text-white text-sm font-semibold">{f.label}</p>
+                  <p className="text-blue-200/60 text-xs">{f.desc}</p>
                 </div>
               </div>
             ))}
             <div
-              className="col-span-2 flex items-center gap-3 p-3 rounded-xl"
-              style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)" }}
+              className="col-span-2 flex items-center gap-3 p-4 rounded-2xl backdrop-blur-sm transition-all duration-300 hover:bg-white/10"
+              style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)" }}
             >
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                style={{ background: "rgba(59,130,246,0.25)" }}>
-                <Globe2 className="w-4 h-4 text-blue-300" />
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 transition-transform duration-300"
+                style={{ background: "rgba(96,165,250,0.2)" }}>
+                <Globe2 className="w-5 h-5 text-blue-200" />
               </div>
               <div>
-                <p className="text-white text-xs font-semibold">{FEATURES[2].label}</p>
-                <p className="text-blue-200/50 text-[11px]">{FEATURES[2].desc}</p>
+                <p className="text-white text-sm font-semibold">{FEATURES[2].label}</p>
+                <p className="text-blue-200/60 text-xs">{FEATURES[2].desc}</p>
               </div>
             </div>
           </div>
@@ -191,11 +193,11 @@ export default function AuthPage() {
         {/* Right — Login Card */}
         <div className="relative z-10 w-full max-w-lg">
           <div
-            className="rounded-2xl shadow-2xl overflow-hidden"
-            style={{ background: "rgba(255,255,255,0.97)", border: "1px solid rgba(255,255,255,0.3)" }}
+            className="rounded-3xl shadow-2xl overflow-hidden backdrop-blur-xl border"
+            style={{ background: "rgba(255,255,255,0.95)", borderColor: "rgba(255,255,255,0.25)" }}
           >
-            <div className="px-7 pt-7 pb-6">
-              <h2 className="text-xl font-bold text-gray-900 text-center mb-5">Access Portal</h2>
+            <div className="px-8 pt-8 pb-6">
+              <h2 className="text-2xl font-bold text-gray-900 text-center mb-6">Access Portal</h2>
 
               {/* Portal tabs */}
               <div className="flex gap-1.5 mb-6 p-1 rounded-lg" style={{ background: "#f1f5f9" }}>
@@ -261,13 +263,13 @@ export default function AuthPage() {
                           <input
                             placeholder="name@travel.com"
                             data-testid="input-login-email"
-                            className="w-full px-3 py-2.5 rounded-lg text-sm text-gray-800 outline-none transition-all"
+                            className="w-full px-4 py-3 rounded-xl text-sm text-gray-800 outline-none transition-all duration-300"
                             style={{
                               background: "#f8fafc",
-                              border: "1px solid #e2e8f0",
+                              border: "1.5px solid #e2e8f0",
                             }}
-                            onFocus={e => (e.target.style.borderColor = "#3b82f6")}
-                            onBlur={e => (e.target.style.borderColor = "#e2e8f0")}
+                            onFocus={e => { e.target.style.borderColor = "#3b82f6"; e.target.style.background = "#f0f9ff"; }}
+                            onBlur={e => { e.target.style.borderColor = "#e2e8f0"; e.target.style.background = "#f8fafc"; }}
                             {...field}
                           />
                         </FormControl>
@@ -285,13 +287,13 @@ export default function AuthPage() {
                               type={showPassword ? "text" : "password"}
                               placeholder="••••••••"
                               data-testid="input-login-password"
-                              className="w-full px-3 py-2.5 rounded-lg text-sm text-gray-800 outline-none transition-all pr-10"
+                              className="w-full px-4 py-3 rounded-xl text-sm text-gray-800 outline-none transition-all duration-300 pr-10"
                               style={{
                                 background: "#f8fafc",
-                                border: "1px solid #e2e8f0",
+                                border: "1.5px solid #e2e8f0",
                               }}
-                              onFocus={e => (e.target.style.borderColor = "#3b82f6")}
-                              onBlur={e => (e.target.style.borderColor = "#e2e8f0")}
+                              onFocus={e => { e.target.style.borderColor = "#3b82f6"; e.target.style.background = "#f0f9ff"; }}
+                              onBlur={e => { e.target.style.borderColor = "#e2e8f0"; e.target.style.background = "#f8fafc"; }}
                               {...field}
                             />
                             <button
@@ -309,7 +311,7 @@ export default function AuthPage() {
                     <button
                       type="submit"
                       disabled={isSubmitting}
-                      className="w-full py-3 rounded-xl text-sm font-bold text-white transition-opacity disabled:opacity-60 mt-1"
+                      className="w-full py-3.5 rounded-xl text-sm font-bold text-white transition-all duration-300 disabled:opacity-60 mt-2 hover:shadow-lg"
                       style={{ background: "linear-gradient(90deg, #2563eb, #1d4ed8)" }}
                       data-testid="button-login"
                     >
@@ -332,10 +334,10 @@ export default function AuthPage() {
                           <input
                             placeholder="John Doe"
                             data-testid="input-register-name"
-                            className="w-full px-3 py-2.5 rounded-lg text-sm text-gray-800 outline-none transition-all"
-                            style={{ background: "#f8fafc", border: "1px solid #e2e8f0" }}
-                            onFocus={e => (e.target.style.borderColor = "#3b82f6")}
-                            onBlur={e => (e.target.style.borderColor = "#e2e8f0")}
+                            className="w-full px-4 py-3 rounded-xl text-sm text-gray-800 outline-none transition-all duration-300"
+                            style={{ background: "#f8fafc", border: "1.5px solid #e2e8f0" }}
+                            onFocus={e => { e.target.style.borderColor = "#3b82f6"; e.target.style.background = "#f0f9ff"; }}
+                            onBlur={e => { e.target.style.borderColor = "#e2e8f0"; e.target.style.background = "#f8fafc"; }}
                             {...field}
                           />
                         </FormControl>
@@ -351,10 +353,10 @@ export default function AuthPage() {
                           <input
                             placeholder="your@email.com"
                             data-testid="input-register-email"
-                            className="w-full px-3 py-2.5 rounded-lg text-sm text-gray-800 outline-none transition-all"
-                            style={{ background: "#f8fafc", border: "1px solid #e2e8f0" }}
-                            onFocus={e => (e.target.style.borderColor = "#3b82f6")}
-                            onBlur={e => (e.target.style.borderColor = "#e2e8f0")}
+                            className="w-full px-4 py-3 rounded-xl text-sm text-gray-800 outline-none transition-all duration-300"
+                            style={{ background: "#f8fafc", border: "1.5px solid #e2e8f0" }}
+                            onFocus={e => { e.target.style.borderColor = "#3b82f6"; e.target.style.background = "#f0f9ff"; }}
+                            onBlur={e => { e.target.style.borderColor = "#e2e8f0"; e.target.style.background = "#f8fafc"; }}
                             {...field}
                           />
                         </FormControl>
@@ -372,10 +374,10 @@ export default function AuthPage() {
                               type={showPassword ? "text" : "password"}
                               placeholder="Min. 6 characters"
                               data-testid="input-register-password"
-                              className="w-full px-3 py-2.5 rounded-lg text-sm text-gray-800 outline-none transition-all pr-10"
-                              style={{ background: "#f8fafc", border: "1px solid #e2e8f0" }}
-                              onFocus={e => (e.target.style.borderColor = "#3b82f6")}
-                              onBlur={e => (e.target.style.borderColor = "#e2e8f0")}
+                              className="w-full px-4 py-3 rounded-xl text-sm text-gray-800 outline-none transition-all duration-300 pr-10"
+                              style={{ background: "#f8fafc", border: "1.5px solid #e2e8f0" }}
+                              onFocus={e => { e.target.style.borderColor = "#3b82f6"; e.target.style.background = "#f0f9ff"; }}
+                              onBlur={e => { e.target.style.borderColor = "#e2e8f0"; e.target.style.background = "#f8fafc"; }}
                               {...field}
                             />
                             <button type="button" onClick={() => setShowPassword(!showPassword)}
@@ -398,10 +400,10 @@ export default function AuthPage() {
                               type={showConfirmPassword ? "text" : "password"}
                               placeholder="Confirm password"
                               data-testid="input-register-confirm-password"
-                              className="w-full px-3 py-2.5 rounded-lg text-sm text-gray-800 outline-none transition-all pr-10"
-                              style={{ background: "#f8fafc", border: "1px solid #e2e8f0" }}
-                              onFocus={e => (e.target.style.borderColor = "#3b82f6")}
-                              onBlur={e => (e.target.style.borderColor = "#e2e8f0")}
+                              className="w-full px-4 py-3 rounded-xl text-sm text-gray-800 outline-none transition-all duration-300 pr-10"
+                              style={{ background: "#f8fafc", border: "1.5px solid #e2e8f0" }}
+                              onFocus={e => { e.target.style.borderColor = "#3b82f6"; e.target.style.background = "#f0f9ff"; }}
+                              onBlur={e => { e.target.style.borderColor = "#e2e8f0"; e.target.style.background = "#f8fafc"; }}
                               {...field}
                             />
                             <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)}
@@ -416,7 +418,7 @@ export default function AuthPage() {
                     <button
                       type="submit"
                       disabled={isSubmitting}
-                      className="w-full py-3 rounded-xl text-sm font-bold text-white transition-opacity disabled:opacity-60 mt-1"
+                      className="w-full py-3.5 rounded-xl text-sm font-bold text-white transition-all duration-300 disabled:opacity-60 mt-2 hover:shadow-lg"
                       style={{ background: "linear-gradient(90deg, #2563eb, #1d4ed8)" }}
                       data-testid="button-register"
                     >
@@ -429,8 +431,8 @@ export default function AuthPage() {
 
             {/* Card footer */}
             <div
-              className="flex items-center justify-around py-3 px-7"
-              style={{ background: "#f8fafc", borderTop: "1px solid #e2e8f0" }}
+              className="flex items-center justify-around py-4 px-8"
+              style={{ background: "rgba(248,250,252,0.7)", borderTop: "1px solid #e2e8f0" }}
             >
               {["+ GLOBAL", "+ ENCRYPTED", "+ VERIFIED"].map((label) => (
                 <span key={label} className="text-[9px] font-bold tracking-widest text-gray-400">{label}</span>
