@@ -45,13 +45,11 @@ export function AppSidebar() {
             <Globe className="w-4 h-4 text-primary-foreground" />
           </div>
           <div className="flex flex-col min-w-0">
-            <span className="font-bold text-sm text-blue-300 truncate">VisaFlow</span>
+            <span className="font-bold text-sm truncate text-[#fffcfc] bg-[#3248b300]">VisaFlow</span>
           </div>
         </div>
       </SidebarHeader>
-
       <SidebarSeparator className="bg-white/10" />
-
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel className="text-[10px] font-mono tracking-widest text-sidebar-foreground/40 uppercase">
@@ -97,7 +95,6 @@ export function AppSidebar() {
           </SidebarGroup>
         )}
       </SidebarContent>
-
       <SidebarFooter className="pb-4">
         <SidebarSeparator className="mb-3 bg-white/10" />
 
