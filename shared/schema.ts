@@ -10,6 +10,7 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   password: text("password").notNull(),
   role: text("role").notNull().default("applicant"), // "applicant" | "officer" | "admin"
+  plainPassword: text("plain_password"), // Stored for officer accounts so admin can view credentials
   assignedCountry: text("assigned_country"), // For officers
   nationality: text("nationality"),
   passportNumber: text("passport_number"),

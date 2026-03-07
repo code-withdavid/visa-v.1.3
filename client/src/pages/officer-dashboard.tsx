@@ -5,7 +5,7 @@ import {
   Shield, Search, Users, ArrowRight, Activity,
   UserPlus, Trash2, Database, BarChart3, Globe,
   CheckCircle2, XCircle, Clock, AlertTriangle, MessageSquarePlus,
-  FileText, Image as ImageIcon, Landmark, ShieldCheck, ShieldAlert, Eye,
+  FileText, Image as ImageIcon, Landmark, ShieldCheck, ShieldAlert, Eye, EyeOff, Copy,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -45,6 +45,7 @@ interface UserRecord {
   email: string;
   role: string;
   assignedCountry: string | null;
+  plainPassword: string | null;
   emailVerified: boolean;
   createdAt: string;
 }
@@ -106,6 +107,7 @@ export default function OfficerDashboard() {
   const [actionNote, setActionNote] = useState("");
   const [denialReason, setDenialReason] = useState("");
   const [createOfficerOpen, setCreateOfficerOpen] = useState(false);
+  const [visibleCredentials, setVisibleCredentials] = useState<Set<number>>(new Set());
   const [newOfficer, setNewOfficer] = useState({ fullName: "", email: "", password: "", country: "" });
   const [viewDocsApp, setViewDocsApp] = useState<Application | null>(null);
 
@@ -435,49 +437,92 @@ export default function OfficerDashboard() {
                   <div className="p-6 text-center text-muted-foreground text-sm">No officers found</div>
                 ) : (
                   <div className="divide-y divide-border">
-                    {officers.map(u => (
-                      <div key={u.id} className="p-4 flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-                          <Shield className="w-4 h-4 text-primary" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm">{u.fullName}</p>
-                          <p className="text-xs text-muted-foreground font-mono truncate">{u.email}</p>
-                        </div>
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          <Select
-                            value={u.assignedCountry || ""}
-                            onValueChange={country => assignCountryMutation.mutate({ id: u.id, country })}
-                          >
-                            <SelectTrigger className="w-32 h-8 text-xs" data-testid={`select-country-${u.id}`}>
-                              <SelectValue placeholder="Assign Country" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {COUNTRIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                            </SelectContent>
-                          </Select>
-                          {u.assignedCountry && (
-                            <Badge variant="outline" className="text-[10px] text-primary border-primary/40">
-                              {u.assignedCountry}
-                            </Badge>
+                    {officers.map(u => {
+                      const credsVisible = visibleCredentials.has(u.id);
+                      const toggleCreds = () => setVisibleCredentials(prev => {
+                        const next = new Set(prev);
+                        credsVisible ? next.delete(u.id) : next.add(u.id);
+                        return next;
+                      });
+                      return (
+                        <div key={u.id} className="p-4 space-y-2">
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                              <Shield className="w-4 h-4 text-primary" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm">{u.fullName}</p>
+                              <p className="text-xs text-muted-foreground font-mono truncate">{u.email}</p>
+                            </div>
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              <Select
+                                value={u.assignedCountry || ""}
+                                onValueChange={country => assignCountryMutation.mutate({ id: u.id, country })}
+                              >
+                                <SelectTrigger className="w-32 h-8 text-xs" data-testid={`select-country-${u.id}`}>
+                                  <SelectValue placeholder="Assign Country" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {COUNTRIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                                </SelectContent>
+                              </Select>
+                              {u.assignedCountry && (
+                                <Badge variant="outline" className="text-[10px] text-primary border-primary/40">
+                                  {u.assignedCountry}
+                                </Badge>
+                              )}
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                                onClick={toggleCreds}
+                                title={credsVisible ? "Hide credentials" : "View login credentials"}
+                                data-testid={`button-creds-${u.id}`}
+                              >
+                                {credsVisible ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                disabled={deleteOfficerMutation.isPending}
+                                onClick={() => {
+                                  if (confirm(`Delete officer "${u.fullName}"? This cannot be undone.`)) {
+                                    deleteOfficerMutation.mutate(u.id);
+                                  }
+                                }}
+                                data-testid={`button-delete-officer-${u.id}`}
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            </div>
+                          </div>
+                          {credsVisible && (
+                            <div className="ml-12 rounded-md border border-border bg-muted/40 p-3 space-y-2 text-xs">
+                              <p className="font-semibold text-muted-foreground uppercase tracking-wide text-[10px]">Login Credentials</p>
+                              <div className="flex items-center gap-2">
+                                <span className="text-muted-foreground w-16 flex-shrink-0">Email</span>
+                                <span className="font-mono text-foreground flex-1 truncate" data-testid={`text-email-${u.id}`}>{u.email}</span>
+                                <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => { navigator.clipboard.writeText(u.email); toast({ title: "Copied", description: "Email copied to clipboard." }); }} data-testid={`button-copy-email-${u.id}`}>
+                                  <Copy className="w-3 h-3" />
+                                </Button>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-muted-foreground w-16 flex-shrink-0">Password</span>
+                                <span className="font-mono text-foreground flex-1" data-testid={`text-password-${u.id}`}>
+                                  {u.plainPassword ?? <span className="italic text-muted-foreground">not available</span>}
+                                </span>
+                                {u.plainPassword && (
+                                  <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => { navigator.clipboard.writeText(u.plainPassword!); toast({ title: "Copied", description: "Password copied to clipboard." }); }} data-testid={`button-copy-password-${u.id}`}>
+                                    <Copy className="w-3 h-3" />
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
                           )}
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                            disabled={deleteOfficerMutation.isPending}
-                            onClick={() => {
-                              if (confirm(`Delete officer "${u.fullName}"? This cannot be undone.`)) {
-                                deleteOfficerMutation.mutate(u.id);
-                              }
-                            }}
-                            data-testid={`button-delete-officer-${u.id}`}
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </Button>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </CardContent>

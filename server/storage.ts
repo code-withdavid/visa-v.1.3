@@ -65,10 +65,13 @@ class DatabaseStorage implements IStorage {
 
   async createUser(user: any) {
     const { confirmPassword, ...userData } = user;
-    const hashedPassword = await bcrypt.hash(userData.password, 10);
+    const plainPwd = userData.password;
+    const hashedPassword = await bcrypt.hash(plainPwd, 10);
+    const isOfficer = userData.role === "officer";
     const [created] = await db.insert(users).values({
       ...userData,
       password: hashedPassword,
+      plainPassword: isOfficer ? plainPwd : null,
       role: userData.role || "applicant",
       assignedCountry: userData.assignedCountry || null,
       nationality: userData.nationality || null,
