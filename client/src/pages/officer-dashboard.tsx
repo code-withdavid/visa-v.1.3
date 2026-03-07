@@ -896,6 +896,7 @@ export default function OfficerDashboard() {
                 placeholder="e.g. Japan Immigration Officer"
                 value={newOfficer.fullName}
                 onChange={e => setNewOfficer(o => ({ ...o, fullName: e.target.value }))}
+                className="bg-[#ffffff]"
                 data-testid="input-officer-name"
               />
             </div>
@@ -906,6 +907,7 @@ export default function OfficerDashboard() {
                 placeholder="e.g. japan_officer@visa.com"
                 value={newOfficer.email}
                 onChange={e => setNewOfficer(o => ({ ...o, email: e.target.value }))}
+                className="bg-[#ffffff]"
                 data-testid="input-officer-email"
               />
             </div>
@@ -916,6 +918,7 @@ export default function OfficerDashboard() {
                 placeholder="Min. 6 characters"
                 value={newOfficer.password}
                 onChange={e => setNewOfficer(o => ({ ...o, password: e.target.value }))}
+                className="bg-[#ffffff]"
                 data-testid="input-officer-password"
               />
             </div>
@@ -925,6 +928,7 @@ export default function OfficerDashboard() {
                 placeholder="e.g. Japan, Germany, Brazil…"
                 value={newOfficer.country}
                 onChange={e => setNewOfficer(o => ({ ...o, country: e.target.value }))}
+                className="bg-[#ffffff]"
                 data-testid="input-officer-country"
               />
               <p className="text-xs text-muted-foreground">This officer will only see visa applications for this country.</p>
