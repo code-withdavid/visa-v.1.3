@@ -199,7 +199,7 @@ export default function ChatBot() {
         </div>
       )}
       {/* Input */}
-      <div className="p-4 backdrop-blur-sm text-[#000000] bg-[#ffffffd9]" style={{ borderTop: "1px solid rgba(255,255,255,0.09)", background: "rgba(10,14,60,0.85)" }}>
+      <div className="p-4 bg-white" style={{ borderTop: "1px solid rgba(0,0,0,0.08)" }}>
         <div className="flex gap-2 items-end max-w-4xl mx-auto">
           <Textarea
             placeholder="Ask VisaBot anything about visa applications..."
