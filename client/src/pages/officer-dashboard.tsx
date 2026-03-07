@@ -5,6 +5,7 @@ import {
   Shield, Search, Users, ArrowRight, Activity,
   UserPlus, Trash2, Database, BarChart3, Globe,
   CheckCircle2, XCircle, Clock, AlertTriangle, MessageSquarePlus,
+  FileText, Image as ImageIcon, Landmark, ShieldCheck, ShieldAlert, Eye,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -67,6 +68,20 @@ interface Stats {
   highRisk: number;
 }
 
+interface DocumentRecord {
+  id: number;
+  applicationId: number;
+  documentType: string;
+  fileName: string;
+  fileSize: number;
+  mimeType: string;
+  verified: boolean;
+  aiConfidenceScore: number | null;
+  aiVerificationNotes: string | null;
+  extractedData: Record<string, string> | null;
+  uploadedAt: string;
+}
+
 const STATUS_CONF: Record<string, { label: string; color: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   pending: { label: "Pending", color: "bg-yellow-500", variant: "secondary" },
   document_review: { label: "Doc Review", color: "bg-blue-500", variant: "secondary" },
@@ -92,11 +107,16 @@ export default function OfficerDashboard() {
   const [denialReason, setDenialReason] = useState("");
   const [createOfficerOpen, setCreateOfficerOpen] = useState(false);
   const [newOfficer, setNewOfficer] = useState({ fullName: "", email: "", password: "", country: "" });
+  const [viewDocsApp, setViewDocsApp] = useState<Application | null>(null);
 
   const appsQuery = useQuery<Application[]>({ queryKey: ["/api/applications/all"] });
   const usersQuery = useQuery<UserRecord[]>({ queryKey: ["/api/admin/users"], enabled: isAdmin });
   const statsQuery = useQuery<Stats>({ queryKey: ["/api/stats/overview"] });
   const feedbackQuery = useQuery<FeedbackRecord[]>({ queryKey: ["/api/feedback"], enabled: isAdmin });
+  const docsQuery = useQuery<DocumentRecord[]>({
+    queryKey: [`/api/applications/${viewDocsApp?.id}/documents`],
+    enabled: !!viewDocsApp,
+  });
 
   const decisionMutation = useMutation({
     mutationFn: async ({ id, action, notes, reason }: { id: number; action: "grant" | "deny"; notes: string; reason?: string }) => {
@@ -139,6 +159,16 @@ export default function OfficerDashboard() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
       toast({ title: "Country Assigned" });
     },
+  });
+
+  const verifyDocMutation = useMutation({
+    mutationFn: async ({ docId, documentType, fileName }: { docId: number; documentType: string; fileName: string }) =>
+      (await apiRequest("POST", `/api/documents/${docId}/verify`, { documentType, fileName })).json(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/applications/${viewDocsApp?.id}/documents`] });
+      toast({ title: "Document Verified", description: "AI verification complete." });
+    },
+    onError: () => toast({ title: "Verification Failed", variant: "destructive" }),
   });
 
   const createOfficerMutation = useMutation({
@@ -305,6 +335,16 @@ export default function OfficerDashboard() {
                             </p>
                           </div>
                           <div className="flex items-center gap-1.5 flex-shrink-0">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-8 text-xs gap-1.5"
+                              onClick={() => setViewDocsApp(app)}
+                              data-testid={`button-view-docs-${app.id}`}
+                            >
+                              <Eye className="w-3 h-3" />
+                              Docs
+                            </Button>
                             {isAdmin && (
                               <Button
                                 size="sm"
@@ -579,6 +619,138 @@ export default function OfficerDashboard() {
           </TabsContent>
         )}
       </Tabs>
+
+      {/* ── Document Review Dialog ── */}
+      <Dialog open={!!viewDocsApp} onOpenChange={() => setViewDocsApp(null)}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5 text-primary" />
+              Document Review
+            </DialogTitle>
+            {viewDocsApp && (
+              <p className="text-sm text-muted-foreground">
+                Application #{viewDocsApp.id} · {viewDocsApp.visaType} Visa · {viewDocsApp.destinationCountry}
+              </p>
+            )}
+          </DialogHeader>
+
+          {docsQuery.isLoading ? (
+            <div className="space-y-3 py-2">
+              {[1, 2, 3].map(i => <Skeleton key={i} className="h-24" />)}
+            </div>
+          ) : !docsQuery.data || docsQuery.data.length === 0 ? (
+            <div className="py-10 text-center space-y-3">
+              <FileText className="w-12 h-12 mx-auto text-muted-foreground/40" />
+              <p className="text-muted-foreground text-sm">No documents uploaded for this application.</p>
+            </div>
+          ) : (
+            <div className="space-y-3 py-2">
+              {[
+                { type: "passport", label: "Passport / ID", Icon: FileText, accept: "PDF" },
+                { type: "photo", label: "Passport Photo", Icon: ImageIcon, accept: "Image" },
+                { type: "financial", label: "Bank Statement", Icon: Landmark, accept: "PDF" },
+              ].map(({ type, label, Icon, accept }) => {
+                const doc = docsQuery.data?.find(d => d.documentType === type);
+                return (
+                  <div key={type} className="rounded-xl border bg-card overflow-hidden">
+                    <div className="flex items-center gap-3 px-4 py-3 border-b bg-muted/30">
+                      <Icon className="w-4 h-4 text-primary flex-shrink-0" />
+                      <span className="font-medium text-sm">{label}</span>
+                      <span className="text-[10px] text-muted-foreground ml-auto font-mono">{accept}</span>
+                    </div>
+                    {doc ? (
+                      <div className="p-4 space-y-3">
+                        <div className="flex items-start justify-between gap-3 flex-wrap">
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium truncate">{doc.fileName}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {(doc.fileSize / 1024).toFixed(1)} KB · {doc.mimeType} · Uploaded {new Date(doc.uploadedAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            {doc.verified ? (
+                              <Badge className="bg-green-100 text-green-700 border-green-200 gap-1 text-[11px]">
+                                <ShieldCheck className="w-3 h-3" />
+                                Verified {doc.aiConfidenceScore ? `${Math.round(doc.aiConfidenceScore * 100)}%` : ""}
+                              </Badge>
+                            ) : (
+                              <Badge variant="secondary" className="gap-1 text-[11px]">
+                                <ShieldAlert className="w-3 h-3" />
+                                Unverified
+                              </Badge>
+                            )}
+                            {!doc.verified && (
+                              <Button
+                                size="sm"
+                                className="h-7 text-xs"
+                                onClick={() => verifyDocMutation.mutate({ docId: doc.id, documentType: doc.documentType, fileName: doc.fileName })}
+                                disabled={verifyDocMutation.isPending}
+                                data-testid={`button-verify-doc-${doc.id}`}
+                              >
+                                {verifyDocMutation.isPending ? "Verifying…" : "AI Verify"}
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                        {doc.aiVerificationNotes && (
+                          <div className="rounded-md bg-blue-50 border border-blue-100 px-3 py-2 text-xs text-blue-800">
+                            <span className="font-semibold">AI Notes: </span>{doc.aiVerificationNotes}
+                          </div>
+                        )}
+                        {doc.extractedData && Object.keys(doc.extractedData).length > 0 && (
+                          <div className="rounded-md bg-muted/40 px-3 py-2 grid grid-cols-2 gap-x-4 gap-y-1">
+                            {Object.entries(doc.extractedData).map(([k, v]) => (
+                              <div key={k} className="text-xs">
+                                <span className="text-muted-foreground capitalize">{k.replace(/([A-Z])/g, " $1")}: </span>
+                                <span className="font-medium">{String(v)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="px-4 py-6 text-center text-sm text-muted-foreground">
+                        No {label.toLowerCase()} uploaded
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+
+              {/* Any extra document types */}
+              {docsQuery.data.filter(d => !["passport","photo","financial"].includes(d.documentType)).map(doc => (
+                <div key={doc.id} className="rounded-xl border bg-card overflow-hidden">
+                  <div className="flex items-center gap-3 px-4 py-3 border-b bg-muted/30">
+                    <FileText className="w-4 h-4 text-primary flex-shrink-0" />
+                    <span className="font-medium text-sm capitalize">{doc.documentType.replace(/_/g, " ")}</span>
+                  </div>
+                  <div className="p-4 space-y-2">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-medium">{doc.fileName}</p>
+                        <p className="text-xs text-muted-foreground">{(doc.fileSize / 1024).toFixed(1)} KB · {new Date(doc.uploadedAt).toLocaleDateString()}</p>
+                      </div>
+                      {doc.verified ? (
+                        <Badge className="bg-green-100 text-green-700 border-green-200 gap-1 text-[11px]">
+                          <ShieldCheck className="w-3 h-3" /> Verified
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary" className="gap-1 text-[11px]">
+                          <ShieldAlert className="w-3 h-3" /> Unverified
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setViewDocsApp(null)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* ── Decision Dialog ── */}
       <Dialog open={!!selectedApp && !!actionType} onOpenChange={() => { setSelectedApp(null); setActionType(null); }}>
