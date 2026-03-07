@@ -39,7 +39,6 @@ const FEATURES = [
   { icon: Globe, label: "Autonomous Renewal", desc: "AI-guided proactive reminders" },
 ];
 
-
 export default function AuthPage() {
   const [, navigate] = useLocation();
   const { login, register, user } = useAuth();
@@ -83,7 +82,6 @@ export default function AuthPage() {
     try {
       await register(data);
       toast({ title: "Registration Successful", description: "Registration successful. Please log in." });
-      // Reset form and switch to login tab
       registerForm.reset();
       const tabsElement = document.querySelector('[value="login"]') as HTMLElement;
       if (tabsElement) tabsElement.click();
@@ -95,8 +93,8 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen flex bg-background">
-      {/* Left Panel */}
+    <div className="min-h-screen flex bg-background overflow-y-auto">
+      {/* Left Panel — desktop only */}
       <div className="hidden lg:flex lg:w-1/2 bg-sidebar flex-col justify-between p-10 relative overflow-hidden">
         <div
           className="absolute inset-0 opacity-[0.04]"
@@ -145,13 +143,35 @@ export default function AuthPage() {
       </div>
 
       {/* Right Panel */}
-      <div className="flex-1 flex items-center justify-center p-6">
+      <div className="flex-1 flex flex-col items-center justify-start lg:justify-center px-4 py-8 sm:px-6 sm:py-10">
         <div className="w-full max-w-md">
-          <div className="flex items-center gap-2 mb-8 lg:hidden">
-            <Globe className="w-6 h-6 text-primary" />
-            <span className="font-bold text-lg">VisaFlow</span>
+
+          {/* Mobile-only branded header */}
+          <div className="lg:hidden mb-6">
+            <div className="flex items-center gap-3 mb-1">
+              <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center">
+                <Globe className="w-4 h-4 text-primary-foreground" />
+              </div>
+              <span className="text-xl font-bold">VisaFlow</span>
+            </div>
+            <p className="text-[11px] font-mono text-muted-foreground tracking-widest uppercase mb-4">
+              Futuristic Edition v2.0
+            </p>
+            {/* Feature chips — scrollable row */}
+            <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-none">
+              {FEATURES.map(f => (
+                <div
+                  key={f.label}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-muted text-xs whitespace-nowrap flex-shrink-0"
+                >
+                  <f.icon className="w-3 h-3 text-primary" />
+                  <span className="text-muted-foreground font-medium">{f.label}</span>
+                </div>
+              ))}
+            </div>
           </div>
 
+          {/* Portal selector */}
           <div className="mb-6 text-center">
             <h2 className="text-2xl font-bold mb-3">Select Portal</h2>
             <div className="flex justify-center gap-2 flex-wrap">
@@ -237,7 +257,6 @@ export default function AuthPage() {
                       </Button>
                     </form>
                   </Form>
-
                 </CardContent>
               </Card>
             </TabsContent>
@@ -327,6 +346,15 @@ export default function AuthPage() {
               </Card>
             </TabsContent>
           </Tabs>
+
+          {/* Mobile footer badge */}
+          <div className="lg:hidden mt-6 flex items-center justify-center gap-2">
+            <div className="h-1.5 w-1.5 rounded-full bg-green-400" />
+            <span className="text-[10px] font-mono text-muted-foreground tracking-widest uppercase">
+              Secure · Encrypted · ISO 27001
+            </span>
+          </div>
+
         </div>
       </div>
     </div>
