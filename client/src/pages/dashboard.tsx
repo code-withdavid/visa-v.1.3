@@ -242,10 +242,10 @@ export default function Dashboard() {
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">
+          <h1 className="text-2xl font-bold text-white">
             {isOfficer ? "Officer Control Center" : `Welcome back, ${user?.fullName?.split(" ")[0]}`}
           </h1>
-          <p className="text-muted-foreground text-sm mt-0.5">
+          <p className="text-blue-200/60 text-sm mt-0.5">
             {isOfficer ? "Manage and process visa applications" : "Track and manage your visa applications"}
           </p>
         </div>

@@ -125,8 +125,8 @@ export default function NewApplication() {
           </Button>
         </Link>
         <div>
-          <h1 className="text-2xl font-bold">New Visa Application</h1>
-          <p className="text-muted-foreground text-sm">Fill in the details to begin your application</p>
+          <h1 className="text-2xl font-bold text-white">New Visa Application</h1>
+          <p className="text-blue-200/60 text-sm">Fill in the details to begin your application</p>
         </div>
       </div>
 

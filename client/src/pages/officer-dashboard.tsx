@@ -179,11 +179,11 @@ export default function OfficerDashboard() {
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <Shield className="w-6 h-6 text-primary" />
+        <h1 className="text-2xl font-bold flex items-center gap-2 text-white">
+          <Shield className="w-6 h-6 text-blue-300" />
           {isAdmin ? "Admin Control Panel" : `${currentUser?.assignedCountry || ""} Immigration Officer Dashboard`}
         </h1>
-        <p className="text-muted-foreground text-sm mt-0.5">
+        <p className="text-blue-200/60 text-sm mt-0.5">
           {isAdmin
             ? "System-wide monitoring, user management, and application control"
             : `Viewing visa applications for ${currentUser?.assignedCountry || "your assigned country"}`}
@@ -213,7 +213,7 @@ export default function OfficerDashboard() {
       )}
 
       <Tabs defaultValue="applications">
-        <TabsList className="mb-4">
+        <TabsList className="mb-4 bg-white/10 border border-white/10 backdrop-blur-sm">
           <TabsTrigger value="applications" className="gap-2">
             <BarChart3 className="w-4 h-4" />
             Applications

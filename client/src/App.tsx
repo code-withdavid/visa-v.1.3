@@ -22,10 +22,10 @@ function ProtectedLayout() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-background">
+      <div className="flex items-center justify-center h-screen">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-          <p className="text-muted-foreground text-sm">Loading VisaFlow...</p>
+          <div className="w-10 h-10 border-4 border-blue-400 border-t-transparent rounded-full animate-spin" />
+          <p className="text-blue-200/70 text-sm">Loading VisaFlow...</p>
         </div>
       </div>
     );
@@ -43,11 +43,11 @@ function ProtectedLayout() {
       <div className="flex h-screen w-full overflow-hidden">
         <AppSidebar />
         <div className="flex flex-col flex-1 min-w-0">
-          <header className="flex items-center justify-between px-4 py-2 border-b bg-background/80 backdrop-blur-sm sticky top-0 z-50 h-12">
-            <SidebarTrigger data-testid="button-sidebar-toggle" className="-ml-1" />
+          <header className="flex items-center justify-between px-4 py-2 sticky top-0 z-50 h-12 backdrop-blur-md" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)", background: "rgba(10,26,53,0.7)" }}>
+            <SidebarTrigger data-testid="button-sidebar-toggle" className="-ml-1 text-white/70 hover:text-white" />
             <div className="flex items-center gap-2">
-              <div className="h-2 w-2 rounded-full bg-green-500 pulse-glow" />
-              <span className="text-xs text-muted-foreground font-mono">SYSTEM ONLINE</span>
+              <div className="h-2 w-2 rounded-full bg-green-400 pulse-glow" />
+              <span className="text-xs text-blue-200/60 font-mono tracking-widest">SYSTEM ONLINE</span>
             </div>
           </header>
           <main className="flex-1 overflow-auto">
@@ -89,8 +89,8 @@ function Router() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-background">
-        <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      <div className="flex items-center justify-center h-screen">
+        <div className="w-10 h-10 border-4 border-blue-400 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }

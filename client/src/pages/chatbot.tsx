@@ -99,13 +99,13 @@ export default function ChatBot() {
   return (
     <div className="h-[calc(100vh-3rem)] flex flex-col">
       {/* Header */}
-      <div className="px-6 py-4 border-b bg-background flex items-center justify-between">
+      <div className="px-6 py-4 flex items-center justify-between backdrop-blur-md" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)", background: "rgba(10,26,53,0.7)" }}>
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-accent/20 flex items-center justify-center">
-            <Bot className="w-5 h-5 text-accent" />
+          <div className="w-9 h-9 rounded-full bg-blue-500/20 flex items-center justify-center border border-blue-400/20">
+            <Bot className="w-5 h-5 text-blue-300" />
           </div>
           <div>
-            <h1 className="font-bold flex items-center gap-1.5">
+            <h1 className="font-bold flex items-center gap-1.5 text-white">
               VisaBot
               <span className="text-[10px] font-mono text-accent bg-accent/10 px-1.5 py-0.5 rounded">AI</span>
             </h1>

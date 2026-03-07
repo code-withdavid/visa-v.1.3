@@ -78,10 +78,10 @@ export default function FeedbackPage() {
       {/* Header */}
       <div>
         <div className="flex items-center gap-2 mb-1">
-          <MessageSquarePlus className="w-5 h-5 text-primary" />
-          <h1 className="text-xl font-bold">Submit Feedback</h1>
+          <MessageSquarePlus className="w-5 h-5 text-blue-300" />
+          <h1 className="text-xl font-bold text-white">Submit Feedback</h1>
         </div>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-blue-200/60">
           Share your experience or suggestions to help us improve VisaFlow.
         </p>
       </div>

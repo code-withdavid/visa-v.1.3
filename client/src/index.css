@@ -2,43 +2,43 @@
 @tailwind components;
 @tailwind utilities;
 
-/* LIGHT MODE */
+/* LIGHT MODE — Dark Blue Theme (matches login page gradient) */
 :root {
-  --button-outline: rgba(0,0,0, .10);
-  --badge-outline: rgba(0,0,0, .05);
-  --opaque-button-border-intensity: -8;
-  --elevate-1: rgba(0,0,0, .03);
-  --elevate-2: rgba(0,0,0, .08);
+  --button-outline: rgba(255,255,255, .12);
+  --badge-outline: rgba(255,255,255, .08);
+  --opaque-button-border-intensity: 9;
+  --elevate-1: rgba(255,255,255, .04);
+  --elevate-2: rgba(255,255,255, .08);
 
-  --background: 215 30% 96%;
-  --foreground: 220 40% 12%;
-  --border: 215 20% 85%;
+  --background: 220 60% 8%;
+  --foreground: 210 25% 94%;
+  --border: 215 20% 82%;
   --card: 0 0% 100%;
   --card-foreground: 220 40% 12%;
   --card-border: 215 20% 88%;
-  --sidebar: 220 40% 13%;
+  --sidebar: 220 55% 7%;
   --sidebar-foreground: 215 20% 90%;
-  --sidebar-border: 220 35% 20%;
-  --sidebar-primary: 200 100% 50%;
+  --sidebar-border: 220 35% 16%;
+  --sidebar-primary: 210 100% 58%;
   --sidebar-primary-foreground: 220 40% 8%;
-  --sidebar-accent: 220 30% 22%;
+  --sidebar-accent: 220 40% 14%;
   --sidebar-accent-foreground: 215 20% 90%;
-  --sidebar-ring: 200 100% 50%;
+  --sidebar-ring: 210 100% 58%;
   --popover: 0 0% 100%;
   --popover-foreground: 220 40% 12%;
   --popover-border: 215 20% 85%;
-  --primary: 210 100% 45%;
+  --primary: 210 100% 55%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 215 25% 88%;
+  --secondary: 215 20% 88%;
   --secondary-foreground: 220 40% 20%;
-  --muted: 215 20% 92%;
-  --muted-foreground: 215 20% 45%;
-  --accent: 185 80% 40%;
+  --muted: 215 25% 90%;
+  --muted-foreground: 215 18% 55%;
+  --accent: 210 100% 55%;
   --accent-foreground: 0 0% 100%;
   --destructive: 0 72% 51%;
   --destructive-foreground: 0 0% 100%;
-  --input: 215 20% 80%;
-  --ring: 210 100% 45%;
+  --input: 215 20% 82%;
+  --ring: 210 100% 55%;
   --chart-1: 210 100% 45%;
   --chart-2: 185 80% 40%;
   --chart-3: 142 72% 40%;
@@ -130,7 +130,12 @@
 
 @layer base {
   * { @apply border-border; }
-  body { @apply font-sans antialiased bg-background text-foreground; }
+  body {
+    @apply font-sans antialiased text-foreground;
+    background: linear-gradient(135deg, #0a1a35 0%, #0d2557 35%, #1a3a90 70%, #2d5fc7 100%);
+    background-attachment: fixed;
+    min-height: 100vh;
+  }
 }
 
 @layer utilities {

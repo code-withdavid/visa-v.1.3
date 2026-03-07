@@ -65,11 +65,11 @@ export default function BlockchainLedger() {
     <div className="p-6 max-w-6xl mx-auto space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <Link2 className="w-6 h-6 text-primary" />
+        <h1 className="text-2xl font-bold flex items-center gap-2 text-white">
+          <Link2 className="w-6 h-6 text-blue-300" />
           Blockchain Visa Ledger
         </h1>
-        <p className="text-muted-foreground text-sm mt-0.5">Immutable, cryptographically secured visa records</p>
+        <p className="text-blue-200/60 text-sm mt-0.5">Immutable, cryptographically secured visa records</p>
       </div>
 
       {/* Chain stats */}
