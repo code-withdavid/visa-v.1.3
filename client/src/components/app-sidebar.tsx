@@ -37,7 +37,7 @@ export function AppSidebar() {
     : "??";
 
   return (
-    <Sidebar>
+    <Sidebar style={{ background: "linear-gradient(170deg, #0a0f3c 0%, #131c70 40%, #1e2d90 75%, #2a3ab0 100%)" }}>
       {/* Header */}
       <SidebarHeader className="px-3 py-4">
         <div className="flex items-center gap-2">
@@ -50,7 +50,7 @@ export function AppSidebar() {
         </div>
       </SidebarHeader>
 
-      <SidebarSeparator />
+      <SidebarSeparator className="bg-white/10" />
 
       <SidebarContent>
         <SidebarGroup>
@@ -99,7 +99,7 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="pb-4">
-        <SidebarSeparator className="mb-3" />
+        <SidebarSeparator className="mb-3 bg-white/10" />
 
         {/* User info */}
         <div className="px-2 flex items-center gap-2 mb-3">
