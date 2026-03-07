@@ -120,7 +120,6 @@ export default function ChatBot() {
           <RefreshCw className="w-3.5 h-3.5" />
         </Button>
       </div>
-
       {/* Messages */}
       <div className="flex-1 overflow-auto p-4 space-y-4">
         {historyQuery.isLoading ? (
@@ -185,7 +184,6 @@ export default function ChatBot() {
         )}
         <div ref={messagesEndRef} />
       </div>
-
       {/* Quick prompts (when messages exist) */}
       {messages.length > 0 && (
         <div className="px-4 pb-2 flex gap-2 overflow-x-auto scrollbar-hide" style={{ background: "rgba(10,14,60,0.72)" }}>
@@ -200,9 +198,8 @@ export default function ChatBot() {
           ))}
         </div>
       )}
-
       {/* Input */}
-      <div className="p-4 backdrop-blur-sm" style={{ borderTop: "1px solid rgba(255,255,255,0.09)", background: "rgba(10,14,60,0.85)" }}>
+      <div className="p-4 backdrop-blur-sm bg-[#ffffffd9] text-[#000000]" style={{ borderTop: "1px solid rgba(255,255,255,0.09)", background: "rgba(10,14,60,0.85)" }}>
         <div className="flex gap-2 items-end max-w-4xl mx-auto">
           <Textarea
             placeholder="Ask VisaBot anything about visa applications..."
