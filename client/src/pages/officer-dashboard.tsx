@@ -30,12 +30,16 @@ interface Application {
   userId: number;
   applicationType: string;
   visaType: string;
-  destinationCountry: string;
   purposeOfVisit: string;
+  destinationCountry: string;
+  intendedEntryDate: string | null;
+  intendedExitDate: string | null;
   status: string;
   currentStage: number;
   riskScore: number | null;
   riskLevel: string | null;
+  aiAnalysisSummary: string | null;
+  officerNotes: string | null;
   createdAt: string;
 }
 
@@ -327,31 +331,58 @@ export default function OfficerDashboard() {
                       const riskColor = app.riskLevel === "high" ? "text-red-500" : app.riskLevel === "medium" ? "text-yellow-500" : "text-green-500";
 
                       return (
-                        <div key={app.id} className="p-4 flex items-center gap-3 flex-wrap">
-                          <div className="w-10 h-10 rounded-md bg-muted flex items-center justify-center flex-shrink-0">
-                            <span className="text-xs font-bold font-mono">#{app.id}</span>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-medium text-sm capitalize">{app.visaType} Visa</span>
-                              <Badge variant={cfg.variant} className="text-[10px] h-5">{cfg.label}</Badge>
-                              {app.riskLevel && (
-                                <span className={`text-[10px] font-mono font-bold ${riskColor}`}>
-                                  {app.riskLevel.toUpperCase()} RISK
-                                </span>
+                        <div key={app.id} className="p-4 space-y-2">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-md bg-muted flex items-center justify-center flex-shrink-0">
+                              <span className="text-xs font-bold font-mono">#{app.id}</span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-medium text-sm capitalize">{app.visaType} Visa</span>
+                                <Badge variant={cfg.variant} className="text-[10px] h-5">{cfg.label}</Badge>
+                                {app.riskLevel && (
+                                  <span className={`text-[10px] font-mono font-bold ${riskColor}`}>
+                                    {app.riskLevel.toUpperCase()} RISK
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-xs text-muted-foreground space-y-0.5 mt-1">
+                                <div className="flex gap-2 flex-wrap">
+                                  <span><strong>Type:</strong> {app.applicationType === "new" ? "New Application" : "Renewal"}</span>
+                                  <span>·</span>
+                                  <span>{app.destinationCountry}</span>
+                                  <span>·</span>
+                                  <span>{new Date(app.createdAt).toLocaleDateString()}</span>
+                                </div>
+                                {(app.intendedEntryDate || app.intendedExitDate) && (
+                                  <div className="text-[11px]">
+                                    <span className="font-medium text-foreground/70">Travel Dates: </span>
+                                    {app.intendedEntryDate && app.intendedExitDate
+                                      ? `${new Date(app.intendedEntryDate).toLocaleDateString()} → ${new Date(app.intendedExitDate).toLocaleDateString()}`
+                                      : app.intendedEntryDate ? new Date(app.intendedEntryDate).toLocaleDateString() : "TBD"}
+                                  </div>
+                                )}
+                                {app.riskScore !== null && (
+                                  <div className="text-[11px]">
+                                    <span className="font-medium text-foreground/70">Risk Score: </span>
+                                    {app.riskScore?.toFixed(1)}%
+                                  </div>
+                                )}
+                              </div>
+                              {(isAdmin || currentUser?.assignedCountry === app.destinationCountry) && app.purposeOfVisit && (
+                                <p className="text-xs text-muted-foreground mt-1 truncate max-w-lg">
+                                  <span className="font-medium text-foreground/70">Purpose: </span>
+                                  {app.purposeOfVisit}
+                                </p>
+                              )}
+                              {app.aiAnalysisSummary && (
+                                <p className="text-xs text-muted-foreground mt-1 truncate max-w-lg">
+                                  <span className="font-medium text-foreground/70">AI Analysis: </span>
+                                  {app.aiAnalysisSummary}
+                                </p>
                               )}
                             </div>
-                            <p className="text-xs text-muted-foreground">
-                              {app.destinationCountry} · {new Date(app.createdAt).toLocaleDateString()}
-                            </p>
-                            {(isAdmin || currentUser?.assignedCountry === app.destinationCountry) && app.purposeOfVisit && (
-                              <p className="text-xs text-muted-foreground mt-0.5 truncate max-w-xs">
-                                <span className="font-medium text-foreground/70">Purpose: </span>
-                                {app.purposeOfVisit}
-                              </p>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-1.5 flex-shrink-0">
+                          <div className="flex items-center gap-1.5 flex-shrink-0 flex-wrap">
                             <Button
                               size="sm"
                               variant="outline"
