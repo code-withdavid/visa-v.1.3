@@ -45,7 +45,7 @@ export function AppSidebar() {
             <Globe className="w-4 h-4 text-primary-foreground" />
           </div>
           <div className="flex flex-col min-w-0">
-            <span className="font-bold text-sm text-sidebar-foreground truncate">VisaFlow</span>
+            <span className="font-bold text-sm text-blue-300 truncate">VisaFlow</span>
           </div>
         </div>
       </SidebarHeader>
