@@ -1,7 +1,7 @@
 import { useLocation, Link } from "wouter";
 import {
   LayoutDashboard, FilePlus, Shield, Link2, MessageSquareText,
-  LogOut, Sun, Moon, Globe, Users, ChevronRight, User, MessageSquarePlus,
+  LogOut, Globe, Users, ChevronRight, User, MessageSquarePlus,
 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
@@ -9,7 +9,6 @@ import {
   SidebarHeader, SidebarFooter, SidebarSeparator,
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/lib/auth";
-import { useTheme } from "@/components/theme-provider";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -28,7 +27,6 @@ const officerItems = [
 
 export function AppSidebar() {
   const { user, logout } = useAuth();
-  const { theme, setTheme } = useTheme();
   const [location] = useLocation();
 
   const isOfficer = user?.role === "officer" || user?.role === "admin";
@@ -115,15 +113,6 @@ export function AppSidebar() {
         </div>
 
         <div className="px-2 flex gap-1.5">
-          <Button
-            size="icon"
-            variant="ghost"
-            className="w-8 h-8 flex-shrink-0"
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            data-testid="button-theme-toggle"
-          >
-            {theme === "dark" ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
-          </Button>
           <Button
             variant="ghost"
             size="sm"
