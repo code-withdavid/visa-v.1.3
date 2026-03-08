@@ -382,7 +382,7 @@ export default function OfficerDashboard() {
                                 </p>
                               )}
                             </div>
-                          <div className="flex items-center gap-1.5 flex-shrink-0 flex-wrap">
+                            <div className="flex items-center gap-1.5 flex-shrink-0 flex-wrap">
                             <Button
                               size="sm"
                               variant="outline"
@@ -435,6 +435,7 @@ export default function OfficerDashboard() {
                                 <ArrowRight className="w-4 h-4" />
                               </Button>
                             </Link>
+                            </div>
                           </div>
                         </div>
                       );
