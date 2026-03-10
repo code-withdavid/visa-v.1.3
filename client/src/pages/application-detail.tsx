@@ -5,6 +5,7 @@ import {
   ArrowLeft, CheckCircle2, Clock, AlertCircle, Shield, Link2, FileText,
   Cpu, Upload, RefreshCw, QrCode, Zap, ChevronRight, Download,
 } from "lucide-react";
+import {QRCodeSVG} from "qrcode.react"; 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -83,6 +84,15 @@ export default function ApplicationDetail() {
   const isOfficer = user?.role === "officer" || user?.role === "admin";
   const [selectedDocType, setSelectedDocType] = useState("passport");
   const [uploadingDoc, setUploadingDoc] = useState(false);
+  const [verifyingDocs, setVerifyingDocs] = useState<Set<number>>(new Set());
+
+  const verifyMutation = useMutation({
+    mutationFn: async ({ docId, docType, fileName }: { docId: number; docType: string; fileName: string }) => {
+      const res = await apiRequest("POST", `/api/documents/${docId}/verify`, { documentType: docType, fileName });
+      if (!res.ok) throw new Error("Verification failed");
+      return res.json();
+    },
+  });
 
   const uploadMutation = useMutation({
     mutationFn: async ({ type, file }: { type: string; file: File }) => {
@@ -189,15 +199,50 @@ export default function ApplicationDetail() {
   };
 
   const verifyDocument = async (docId: number, docType: string, fileName: string) => {
+    setVerifyingDocs(prev => new Set(prev).add(docId));
     try {
-      const res = await apiRequest("POST", `/api/documents/${docId}/verify`, { documentType: docType, fileName });
-      if (!res.ok) throw new Error();
+      await verifyMutation.mutateAsync({ docId, docType, fileName });
       queryClient.invalidateQueries({ queryKey: [`/api/applications/${appId}/documents`] });
-      toast({ title: "Document Verified", description: "AI verification complete." });
-    } catch {
-      toast({ title: "Error", description: "Verification failed.", variant: "destructive" });
+      toast({ title: "Verification Complete", description: "AI verification finished successfully." });
+    } catch (error) {
+      toast({ title: "Verification Failed", description: "Could not complete AI verification.", variant: "destructive" });
+    } finally {
+      setVerifyingDocs(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(docId);
+        return newSet;
+      });
     }
   };
+
+  const downloadVisa = async (applicationId: number) => {
+    try {
+      const response = await fetch(`/api/visa/${applicationId}/download`);
+      if (!response.ok) {
+        const error = await response.json();
+        toast({ title: "Download Failed", description: error.message || "Could not download visa", variant: "destructive" });
+        return;
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `visa_${appQuery.data?.visaNumber || applicationId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({ title: "Download Successful", description: "Your visa PDF has been downloaded." });
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to download visa", variant: "destructive" });
+    }
+  };
+
+  const QRCodeComponent = ({ value, size }: { value: string; size: number }) => (
+    <QRCodeSVG value={value} size={size} level="H" includeMargin={true} />
+  );
 
   const app = appQuery.data;
   const timeline = timelineQuery.data || [];
@@ -457,38 +502,34 @@ export default function ApplicationDetail() {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {docs.map(doc => (
-                    <div key={doc.id} className="flex items-start justify-between p-3 rounded-md border gap-3" data-testid={`doc-${doc.id}`}>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-sm font-medium truncate">{doc.fileName}</span>
-                          {doc.verified ? (
-                            <Badge className="bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 text-[10px]">
-                              Verified {doc.aiConfidenceScore ? `${Math.round(doc.aiConfidenceScore * 100)}%` : ""}
-                            </Badge>
-                          ) : (
-                            <Badge variant="secondary" className="text-[10px]">Pending</Badge>
+                  {docs.map(doc => {
+                    const isVerifying = verifyingDocs.has(doc.id);
+                    return (
+                      <div key={doc.id} className="flex items-start justify-between p-3 rounded-md border gap-3" data-testid={`doc-${doc.id}`}>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-sm font-medium truncate">{doc.fileName}</span>
+                            {isVerifying ? (
+                              <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400 text-[10px] gap-1.5">
+                                <div className="w-2 h-2 rounded-full bg-blue-600 dark:bg-blue-400 animate-pulse" />
+                                AI Verification Running...
+                              </Badge>
+                            ) : doc.verified ? (
+                              <Badge className="bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 text-[10px]">
+                                ✓ Verified {doc.aiConfidenceScore ? `${Math.round(doc.aiConfidenceScore * 100)}%` : ""}
+                              </Badge>
+                            ) : (
+                              <Badge variant="secondary" className="text-[10px]">Pending Verification</Badge>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground capitalize">{doc.documentType.replace(/_/g, " ")}</p>
+                          {doc.aiVerificationNotes && (
+                            <p className="text-xs text-muted-foreground mt-1 italic">{doc.aiVerificationNotes}</p>
                           )}
                         </div>
-                        <p className="text-xs text-muted-foreground capitalize">{doc.documentType.replace(/_/g, " ")}</p>
-                        {doc.aiVerificationNotes && (
-                          <p className="text-xs text-muted-foreground mt-1 italic">{doc.aiVerificationNotes}</p>
-                        )}
                       </div>
-                      {!doc.verified && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => verifyDocument(doc.id, doc.documentType, doc.fileName)}
-                          data-testid={`button-verify-${doc.id}`}
-                          className="flex-shrink-0"
-                        >
-                          <Cpu className="w-3 h-3 mr-1" />
-                          AI Verify
-                        </Button>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </CardContent>
@@ -524,44 +565,39 @@ export default function ApplicationDetail() {
             </CardContent>
           </Card>
 
-          {/* Blockchain Panel */}
+          {/* Digital Visa Access Panel */}
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm flex items-center gap-2">
-                <Link2 className="w-4 h-4 text-primary" />
-                Blockchain Ledger
+                <Download className="w-4 h-4 text-primary" />
+                Digital Visa Access
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {app.blockchainHash ? (
+              {isGranted ? (
                 <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0" />
-                    <span className="text-xs text-green-700 dark:text-green-400 font-medium">Immutable Record Created</span>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Your visa document is ready for download.</p>
                   </div>
-                  <div className="space-y-1.5">
-                    <div>
-                      <p className="text-[10px] text-muted-foreground font-mono uppercase">Block Hash</p>
-                      <p className="text-[11px] font-mono break-all text-foreground/80">{app.blockchainHash.slice(0, 32)}...</p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-muted-foreground font-mono uppercase">TX ID</p>
-                      <p className="text-[11px] font-mono break-all text-foreground/80">{app.blockchainTxId?.slice(0, 20)}...</p>
-                    </div>
-                    {app.grantedAt && (
-                      <div>
-                        <p className="text-[10px] text-muted-foreground font-mono uppercase">Issued</p>
-                        <p className="text-[11px] font-mono">{new Date(app.grantedAt).toLocaleDateString()}</p>
+                  <div>
+                    <Badge className="bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400">Visa Approved</Badge>
+                  </div>
+                  <Button
+                    size="sm"
+                    className="w-full gap-2"
+                    onClick={() => downloadVisa(app.id)}
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    Download Visa PDF
+                  </Button>
+                  {app.visaNumber && (
+                    <div className="mt-3 p-3 rounded-md bg-muted flex flex-col items-center justify-center">
+                      <div className="text-center">
+                        <QRCodeComponent value={`${window.location.origin}/verify/${app.visaNumber}`} size={120} />
+                        <p className="text-[10px] text-muted-foreground mt-2">Scan to verify visa authenticity</p>
                       </div>
-                    )}
-                  </div>
-                  <div className="mt-3 p-3 rounded-md bg-muted flex items-center justify-center">
-                    <div className="text-center">
-                      <QrCode className="w-8 h-8 text-muted-foreground mx-auto mb-1" />
-                      <p className="text-[10px] text-muted-foreground">QR Code Active</p>
-                      <p className="text-[10px] text-muted-foreground font-mono">Scan to verify visa</p>
                     </div>
-                  </div>
+                  )}
                 </div>
               ) : isDenied ? (
                 <div className="text-center py-4">
@@ -571,25 +607,27 @@ export default function ApplicationDetail() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <div className="text-center py-2">
-                    <Clock className="w-8 h-8 text-muted-foreground mx-auto mb-2 opacity-40" />
-                    <p className="text-xs text-muted-foreground">Record created when visa is granted</p>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Your visa document will be available here after approval.</p>
                   </div>
-                  {!isOfficer && (
-                    <Button
-                      size="sm"
-                      className="w-full gap-2"
-                      onClick={() => blockchainMutation.mutate()}
-                      disabled={blockchainMutation.isPending || (app.riskScore === null)}
-                      data-testid="button-issue-blockchain"
-                    >
-                      <Zap className="w-3.5 h-3.5" />
-                      {blockchainMutation.isPending ? "Issuing..." : "Issue Visa (Demo)"}
-                    </Button>
-                  )}
-                  {app.riskScore === null && !isOfficer && (
-                    <p className="text-[10px] text-muted-foreground text-center">Run risk assessment first</p>
-                  )}
+                  <div>
+                    <Badge className="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-400">Pending Approval</Badge>
+                  </div>
+                  <Button
+                    size="sm"
+                    className="w-full gap-2"
+                    disabled={true}
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    Download Visa PDF
+                  </Button>
+                  <div className="mt-3 p-3 rounded-md bg-muted flex items-center justify-center">
+                    <div className="text-center">
+                      <QrCode className="w-8 h-8 text-muted-foreground mx-auto mb-1" />
+                      <p className="text-[10px] text-muted-foreground">QR Code</p>
+                      <p className="text-[10px] text-muted-foreground font-mono">Available after approval</p>
+                    </div>
+                  </div>
                 </div>
               )}
             </CardContent>

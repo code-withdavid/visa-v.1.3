@@ -15,6 +15,7 @@ import OfficerDashboard from "@/pages/officer-dashboard";
 import BlockchainLedger from "@/pages/blockchain-ledger";
 import ChatBot from "@/pages/chatbot";
 import FeedbackPage from "@/pages/feedback";
+import VisaVerification from "@/pages/visa-verification";
 import NotFound from "@/pages/not-found";
 
 function ProtectedLayout() {
@@ -98,6 +99,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/auth" component={AuthPage} />
+      <Route path="/verify/:visaNumber" component={VisaVerification} />
       <Route>
         <ProtectedLayout />
       </Route>

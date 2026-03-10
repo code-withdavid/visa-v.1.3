@@ -20,6 +20,7 @@ export interface IStorage {
 
   // Applications
   getApplication(id: number): Promise<VisaApplication | undefined>;
+  getApplicationByVisaNumber(visaNumber: string): Promise<VisaApplication | undefined>;
   getApplicationsByUser(userId: number): Promise<VisaApplication[]>;
   getAllApplications(): Promise<VisaApplication[]>;
   createApplication(app: InsertVisaApplication & { userId: number }): Promise<VisaApplication>;
@@ -111,6 +112,11 @@ class DatabaseStorage implements IStorage {
   // ── Applications ───────────────────────────────────────────────────────────
   async getApplication(id: number) {
     const [app] = await db.select().from(visaApplications).where(eq(visaApplications.id, id));
+    return app;
+  }
+
+  async getApplicationByVisaNumber(visaNumber: string) {
+    const [app] = await db.select().from(visaApplications).where(eq(visaApplications.visaNumber, visaNumber));
     return app;
   }
 

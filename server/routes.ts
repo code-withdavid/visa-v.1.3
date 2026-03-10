@@ -3,6 +3,7 @@ import type { Server } from "http";
 import { createHash, randomBytes } from "crypto";
 import { GoogleGenAI } from "@google/genai";
 import { storage } from "./storage";
+import { generateVisaPDF } from "./pdf-generator";
 
 const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
 
@@ -945,6 +946,123 @@ Be objective and base your assessment on the provided information. Return ONLY t
       res.json(entries);
     } catch (e) {
       res.status(500).json({ message: "Failed to fetch feedback" });
+    }
+  });
+
+  // ── VISA DOWNLOAD ──────────────────────────────────────────────────────────
+  app.get("/api/visa/:applicationId/download", async (req: Request, res: Response) => {
+    try {
+      const appId = Number(req.params.applicationId);
+      const userId = getSessionUserId(req);
+      
+      const application = await storage.getApplication(appId);
+      if (!application) {
+        return res.status(404).json({ message: "Application not found" });
+      }
+
+      // Check authorization - user can only download their own visa, or officers can download any
+      if (userId) {
+        const user = await storage.getUser(userId);
+        if (application.userId !== userId && user?.role !== "officer" && user?.role !== "admin") {
+          return res.status(403).json({ message: "Not authorized to download this visa" });
+        }
+      }
+
+      // Only allow download for granted visas
+      if (application.status !== "granted") {
+        return res.status(400).json({ message: "Visa is not yet granted for download" });
+      }
+
+      // Get user details
+      const user = await storage.getUser(application.userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Generate PDF
+      const pdfStream = await generateVisaPDF({
+        visaNumber: application.visaNumber || "PENDING",
+        applicationId: application.id,
+        fullName: user.fullName,
+        passportNumber: user.passportNumber || "N/A",
+        nationality: user.nationality || "N/A",
+        dateOfBirth: user.dateOfBirth || "N/A",
+        visaType: application.visaType,
+        destinationCountry: application.destinationCountry,
+        intendedEntryDate: application.intendedEntryDate,
+        intendedExitDate: application.intendedExitDate,
+        purposeOfVisit: application.purposeOfVisit,
+        grantedAt: application.grantedAt,
+        expiryDate: application.expiryDate,
+        riskLevel: application.riskLevel,
+      });
+
+      // Set response headers for PDF download
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", `attachment; filename="visa_${application.visaNumber || appId}.pdf"`);
+
+      // Pipe the PDF stream to the response
+      pdfStream.pipe(res);
+
+      // Handle errors
+      pdfStream.on("error", (error: Error) => {
+        console.error("PDF generation error:", error);
+        if (!res.headersSent) {
+          res.status(500).json({ message: "Failed to generate PDF" });
+        }
+      });
+    } catch (e) {
+      console.error("Visa download error:", e);
+      res.status(500).json({ message: "Failed to download visa" });
+    }
+  });
+
+  // ── VISA VERIFICATION ──────────────────────────────────────────────────────
+  app.get("/api/visa/verify/:visaNumber", async (req: Request, res: Response) => {
+    try {
+      const visaNumber = Array.isArray(req.params.visaNumber) ? req.params.visaNumber[0] : req.params.visaNumber;
+
+      if (!visaNumber) {
+        return res.status(400).json({ message: "Visa number is required" });
+      }
+
+      const application = await storage.getApplicationByVisaNumber(visaNumber);
+      if (!application || application.status !== "granted") {
+        return res.status(404).json({
+          isValid: false,
+          message: "Visa not found or has been revoked",
+        });
+      }
+
+      // Get user details
+      const user = await storage.getUser(application.userId);
+      if (!user) {
+        return res.status(404).json({
+          isValid: false,
+          message: "Associated user record not found",
+        });
+      }
+
+      // Check if visa is expired
+      const isExpired = application.expiryDate ? new Date(application.expiryDate) < new Date() : false;
+      const isValid = application.status === "granted" && !isExpired;
+
+      res.json({
+        visaNumber: application.visaNumber,
+        applicationId: application.id,
+        fullName: user.fullName,
+        passportNumber: user.passportNumber || "N/A",
+        visaType: application.visaType,
+        destinationCountry: application.destinationCountry,
+        grantedAt: application.grantedAt,
+        expiryDate: application.expiryDate,
+        status: isExpired ? "expired" : application.status,
+        isValid: isValid,
+        message: isValid ? "Visa is valid and authentic" : isExpired ? "Visa has expired" : "Visa is invalid",
+      });
+    } catch (e) {
+      console.error("Visa verification error:", e);
+      res.status(500).json({ message: "Failed to verify visa" });
     }
   });
 
