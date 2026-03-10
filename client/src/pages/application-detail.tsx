@@ -5,7 +5,7 @@ import {
   ArrowLeft, CheckCircle2, Clock, AlertCircle, Shield, Link2, FileText,
   Cpu, Upload, RefreshCw, QrCode, Zap, ChevronRight, Download,
 } from "lucide-react";
-import {QRCodeSVG} from "qrcode.react"; 
+import {QRCodeSVG} from "qrcode.react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

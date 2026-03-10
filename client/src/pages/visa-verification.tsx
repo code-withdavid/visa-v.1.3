@@ -1,4 +1,5 @@
 import { useRoute } from "wouter";
+import html2pdf from "html2pdf.js";
 import { useQuery } from "@tanstack/react-query";
 import { CheckCircle2, AlertCircle, ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
@@ -6,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+
 
 interface VisaVerificationData {
   visaNumber: string;
