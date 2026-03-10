@@ -1,7 +1,7 @@
 import { useLocation, Link } from "wouter";
 import {
   LayoutDashboard, FilePlus, Shield, Link2, MessageSquareText,
-  LogOut, Globe, Users, ChevronRight, User, MessageSquarePlus,
+  LogOut, Globe, Users, ChevronRight, User, MessageSquarePlus, Moon, Sun,
 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
@@ -9,6 +9,7 @@ import {
   SidebarHeader, SidebarFooter, SidebarSeparator,
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/lib/auth";
+import { useTheme } from "@/components/theme-provider";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -26,6 +27,7 @@ const officerItems = [
 
 export function AppSidebar() {
   const { user, logout } = useAuth();
+  const { theme, setTheme } = useTheme();
   const [location] = useLocation();
 
   const isOfficer = user?.role === "officer" || user?.role === "admin";
@@ -109,6 +111,17 @@ export function AppSidebar() {
         </div>
 
         <div className="px-2 flex gap-1.5">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="flex-1 justify-start gap-1.5"
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+            data-testid="button-toggle-theme"
+          >
+            {theme === "dark" ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
+            <span>{theme === "dark" ? "Light" : "Dark"}</span>
+          </Button>
           <Button
             variant="ghost"
             size="sm"

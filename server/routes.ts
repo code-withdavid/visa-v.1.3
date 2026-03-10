@@ -1,14 +1,10 @@
 import type { Express, Request, Response } from "express";
 import type { Server } from "http";
 import { createHash, randomBytes } from "crypto";
-import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { storage } from "./storage";
-import { sendOTPEmail } from "./email";
 
-const anthropic = new Anthropic({
-  apiKey: process.env.AI_INTEGRATIONS_ANTHROPIC_API_KEY,
-  baseURL: process.env.AI_INTEGRATIONS_ANTHROPIC_BASE_URL,
-});
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function generateBlockHash(data: string, previousHash?: string): string {
@@ -87,8 +83,11 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const existing = await storage.getUserByEmail(email);
       if (existing) return res.status(409).json({ message: "Email already registered" });
 
+      // Pass plain password to storage - it will handle hashing
       const user = await storage.createUser({
-        fullName, email, password,
+        fullName,
+        email,
+        password: password,
         role: "applicant",
       });
 
@@ -99,20 +98,67 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
   });
 
-  app.post("/api/auth/login", async (req: Request, res: Response) => {
+  // Helper function for role-based login
+  async function handleRoleBasedLogin(
+    email: string,
+    password: string,
+    requiredRole: "applicant" | "officer" | "admin",
+    res: Response
+  ) {
     try {
-      const { email, password } = req.body;
-      const user = await storage.getUserByEmail(email);
-      if (!user || !(await bcrypt.compare(password, user.password))) {
-        return res.status(401).json({ message: "Invalid email or password" });
+      if (!email || !password) {
+        return res.status(400).json({ message: "Email and password are required" });
       }
 
+      // Fetch user from database with email only
+      const user = await storage.getUserByEmail(email);
+
+      // Check if user exists
+      if (!user) {
+        return res.status(401).json({ message: "Invalid login for this portal" });
+      }
+
+      // Check if user role matches the required role for this portal
+      if (user.role !== requiredRole) {
+        return res.status(401).json({ message: "Invalid login for this portal" });
+      }
+
+      // Compare entered password with stored hashed password
+      const isPasswordValid = await bcrypt.compare(password, user.password);
+      if (!isPasswordValid) {
+        return res.status(401).json({ message: "Invalid login for this portal" });
+      }
+
+      // Password is correct and role matches - create session and return user
       const token = createSession(user.id);
       const { password: _, ...safeUser } = user;
       res.json({ user: safeUser, token });
     } catch (e) {
+      console.error("Login error:", e);
       res.status(500).json({ message: "Login failed" });
     }
+  }
+
+  // Applicant Login
+  app.post("/api/auth/login/applicant", async (req: Request, res: Response) => {
+    await handleRoleBasedLogin(req.body.email, req.body.password, "applicant", res);
+  });
+
+  // Officer Login
+  app.post("/api/auth/login/officer", async (req: Request, res: Response) => {
+    await handleRoleBasedLogin(req.body.email, req.body.password, "officer", res);
+  });
+
+  // Admin Login
+  app.post("/api/auth/login/admin", async (req: Request, res: Response) => {
+    await handleRoleBasedLogin(req.body.email, req.body.password, "admin", res);
+  });
+
+  // Legacy endpoint for backward compatibility - now returns role error
+  app.post("/api/auth/login", async (req: Request, res: Response) => {
+    return res.status(400).json({
+      message: "Please use role-specific login endpoints: /api/auth/login/applicant, /api/auth/login/officer, or /api/auth/login/admin"
+    });
   });
 
   app.get("/api/auth/me", async (req: Request, res: Response) => {
@@ -155,12 +201,12 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       return res.status(403).json({ message: "Forbidden" });
     }
     const apps = await storage.getAllApplications();
-    
+
     // Filter by assigned country for officers
     const filteredApps = user.role === "officer" && user.assignedCountry
       ? apps.filter(a => a.destinationCountry === user.assignedCountry)
       : apps;
-      
+
     res.json(filteredApps);
   });
 
@@ -233,36 +279,82 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       if (!userId) return res.status(401).json({ message: "Not authenticated" });
       const docId = Number(req.params.docId);
 
-      const message = await anthropic.messages.create({
-        model: "claude-haiku-4-5",
-        max_tokens: 500,
-        messages: [{
-          role: "user",
-          content: `You are an AI document verification system for a visa processing platform.
-          Simulate verifying a "${req.body.documentType || "document"}" document called "${req.body.fileName || "document.pdf"}".
-          Return a JSON object with these fields:
-          - verified: boolean
-          - confidence: number 0-1
-          - notes: string (brief verification notes)
-          - extractedData: object with relevant fields (name, dateOfBirth, documentNumber, expiryDate if applicable)
-          Return ONLY valid JSON, no markdown.`
-        }]
+      if (!docId || isNaN(docId)) {
+        return res.status(400).json({ message: "Invalid document ID" });
+      }
+
+      const { documentType, fileName } = req.body;
+      if (!documentType) {
+        return res.status(400).json({ message: "Document type is required" });
+      }
+
+      const model = genAI.getGenerativeModel({
+        model: "gemini-3-flash-preview"
       });
 
-      const text = message.content[0].type === "text" ? message.content[0].text : "{}";
+      // Create a detailed verification prompt based on document type
+      const verificationPrompt = `You are an AI document verification specialist for a visa processing system.
+
+Analyze the following document for verification:
+- Document Type: ${documentType}
+- File Name: ${fileName || "unknown"}
+
+Based on the provided information, evaluate:
+1. Whether the document appears valid and authentic
+2. Confidence level (0 to 1) in the verification
+3. Any notes or observations about the document
+4. Extracted key information relevant to visa processing
+
+Return a JSON response with EXACTLY this structure (no markdown, no code blocks):
+{
+  "verified": true or false,
+  "confidence": a number between 0 and 1,
+  "notes": "Brief description of verification result and any concerns",
+  "extractedData": {
+    "documentType": "${documentType}",
+    "status": "valid" or "suspicious" or "needs_review",
+    "expiryStatus": "not_applicable" or "valid" or "expiring_soon" or "expired",
+    "observations": ["observation1", "observation2"]
+  }
+}
+
+Return ONLY the JSON object, nothing else.`;
+
+      const result = await model.generateContent(verificationPrompt);
+      const responseText = result.response.text();
+      
       let parsed: any = {};
-      try { parsed = JSON.parse(text); } catch { parsed = { verified: true, confidence: 0.92, notes: "Document appears authentic.", extractedData: {} }; }
+      try {
+        // Clean up response in case it has markdown formatting
+        const cleanedText = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+        parsed = JSON.parse(cleanedText);
+      } catch (parseError) {
+        console.error("JSON parse error:", parseError, "Response was:", responseText);
+        // Fallback response if parsing fails
+        parsed = {
+          verified: true,
+          confidence: 0.85,
+          notes: "Document verification completed with standard analysis.",
+          extractedData: {
+            documentType,
+            status: "valid",
+            expiryStatus: "not_applicable",
+            observations: ["Document appears authentic"]
+          }
+        };
+      }
 
       const updated = await storage.updateDocument(docId, {
-        verified: parsed.verified,
-        aiConfidenceScore: parsed.confidence,
-        aiVerificationNotes: parsed.notes,
-        extractedData: parsed.extractedData || {},
+        verified: parsed.verified !== false,
+        aiConfidenceScore: Math.min(1, Math.max(0, parsed.confidence || 0.85)),
+        aiVerificationNotes: parsed.notes || "Verification completed",
+        extractedData: parsed.extractedData || { documentType, status: "valid" },
       });
+
       res.json(updated);
     } catch (e) {
-      console.error(e);
-      res.status(500).json({ message: "Verification failed" });
+      console.error("Document verification error:", e);
+      res.status(500).json({ message: "Verification failed", error: process.env.NODE_ENV === "development" ? e : undefined });
     }
   });
 
@@ -271,47 +363,90 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     try {
       const userId = getSessionUserId(req);
       if (!userId) return res.status(401).json({ message: "Not authenticated" });
-      const app = await storage.getApplication(Number(req.params.id));
+      
+      const appId = Number(req.params.id);
+      if (!appId || isNaN(appId)) {
+        return res.status(400).json({ message: "Invalid application ID" });
+      }
+
+      const app = await storage.getApplication(appId);
       if (!app) return res.status(404).json({ message: "Application not found" });
+      
+      // Verify user has access to this application
+      if (app.userId !== userId) {
+        const user = await storage.getUser(userId);
+        if (!user || (user.role !== "officer" && user.role !== "admin")) {
+          return res.status(403).json({ message: "Forbidden" });
+        }
+      }
+
       const user = await storage.getUser(app.userId);
       const docs = await storage.getDocumentsByApplication(app.id);
 
-      const message = await anthropic.messages.create({
-        model: "claude-haiku-4-5",
-        max_tokens: 600,
-        messages: [{
-          role: "user",
-          content: `You are an AI fraud detection and risk scoring engine for a visa processing system.
+      const riskPrompt = `You are an AI fraud detection and risk scoring engine for a visa processing system.
 
-Applicant details:
-- Visa type: ${app.visaType}
-- Application type: ${app.applicationType}
-- Purpose: ${app.purposeOfVisit}
-- Destination: ${app.destinationCountry}
+Analyze the following applicant for visa risk:
+
+Applicant Details:
+- Visa Type: ${app.visaType}
+- Application Type: ${app.applicationType}
+- Purpose of Visit: ${app.purposeOfVisit}
+- Destination Country: ${app.destinationCountry}
 - Nationality: ${user?.nationality || "Unknown"}
-- Documents submitted: ${docs.length}
-- Documents verified: ${docs.filter(d => d.verified).length}
+- Immigration History: Not provided
+- Documents Submitted: ${docs.length}
+- Documents Verified as Authentic: ${docs.filter(d => d.verified).length}
+- High Confidence Documents: ${docs.filter(d => d.aiConfidenceScore && d.aiConfidenceScore > 0.8).length}
 
 Generate a risk assessment. Return ONLY valid JSON:
 {
-  "riskScore": <number 0-100>,
-  "riskLevel": "<low|medium|high>",
-  "summary": "<2-3 sentence risk assessment summary>",
-  "factors": ["<factor1>", "<factor2>", "<factor3>"]
-}`
+  "riskScore": a number between 0 and 100,
+  "riskLevel": "low" (0-33) or "medium" (34-66) or "high" (67-100),
+  "summary": "2-3 sentence assessment of the visa application risk",
+  "factors": ["risk_factor_1", "risk_factor_2", "risk_factor_3", "positive_factor_1"]
+}
+
+Be objective and base your assessment on the provided information. Return ONLY the JSON object.`;
+
+      const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
+      const result = await model.generateContent({
+        contents: [{
+          role: "user",
+          parts: [{
+            text: riskPrompt
+          }]
         }]
       });
 
-      const text = message.content[0].type === "text" ? message.content[0].text : "{}";
+      const text = result.response.text();
       let parsed: any = {};
-      try { parsed = JSON.parse(text); } catch {
-        parsed = { riskScore: 25, riskLevel: "low", summary: "Application appears legitimate with standard risk profile.", factors: [] };
+      
+      try {
+        // Clean up response in case it has markdown formatting
+        const cleanedText = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+        parsed = JSON.parse(cleanedText);
+      } catch (parseError) {
+        console.error("Risk scoring JSON parse error:", parseError, "Response was:", text);
+        // Fallback response if parsing fails
+        parsed = {
+          riskScore: 35,
+          riskLevel: "medium",
+          summary: "Application requires standard review procedures. Documentation appears complete.",
+          factors: ["Complete documentation provided", "Standard visa application", "Review recommended"]
+        };
       }
 
+      // Validate and normalize risk score
+      const riskScore = Math.max(0, Math.min(100, parsed.riskScore || 35));
+      const validRiskLevels = ["low", "medium", "high"];
+      const riskLevel = validRiskLevels.includes(parsed.riskLevel?.toLowerCase())
+        ? parsed.riskLevel.toLowerCase()
+        : riskScore < 34 ? "low" : riskScore < 67 ? "medium" : "high";
+
       const updated = await storage.updateApplication(app.id, {
-        riskScore: parsed.riskScore,
-        riskLevel: parsed.riskLevel,
-        aiAnalysisSummary: parsed.summary,
+        riskScore,
+        riskLevel,
+        aiAnalysisSummary: parsed.summary || "Risk assessment completed",
       });
 
       const timeline = await storage.getTimeline(app.id);
@@ -320,10 +455,10 @@ Generate a risk assessment. Return ONLY valid JSON:
         await storage.updateTimelineEntry(stage4.id, { status: "completed", completedAt: new Date() });
       }
 
-      res.json({ ...updated, factors: parsed.factors });
+      res.json({ ...updated, factors: parsed.factors || [] });
     } catch (e) {
-      console.error(e);
-      res.status(500).json({ message: "Risk scoring failed" });
+      console.error("Risk scoring error:", e);
+      res.status(500).json({ message: "Risk scoring failed", error: process.env.NODE_ENV === "development" ? e : undefined });
     }
   });
 
@@ -458,7 +593,8 @@ Generate a risk assessment. Return ONLY valid JSON:
   });
 
   app.get("/api/blockchain/verify/:hash", async (req: Request, res: Response) => {
-    const entry = await storage.getBlockchainByHash(req.params.hash);
+    const hash = Array.isArray(req.params.hash) ? req.params.hash[0] : req.params.hash;
+    const entry = await storage.getBlockchainByHash(hash);
     if (!entry) return res.status(404).json({ message: "Visa record not found", valid: false });
     res.json({ ...entry, valid: entry.isValid });
   });
@@ -575,23 +711,35 @@ Generate a risk assessment. Return ONLY valid JSON:
       if (!userId) return res.status(401).json({ message: "Not authenticated" });
       const { content, applicationId } = req.body;
 
+      if (!content || !content.trim()) {
+        return res.status(400).json({ message: "Message content is required" });
+      }
+
       await storage.createChatMessage({ userId, role: "user", content, applicationId: applicationId || null });
 
       const history = await storage.getChatHistory(userId);
-      const chatHistory = history.slice(-10).map(m => ({ role: m.role as "user" | "assistant", content: m.content }));
+      const geminiHistory = history.slice(-10).map(m => ({
+        role: m.role === "assistant" ? "model" : "user",
+        parts: [{ text: m.content }],
+      }));
 
       const systemPrompt = `You are VisaBot, an intelligent AI assistant for the VisaFlow visa processing system.
 You help applicants understand visa requirements, track their application status, guide them through the renewal process, and answer questions about documentation.
-Be concise, professional, and helpful. Format responses with bullet points when listing multiple items.`;
+Be concise, professional, and helpful. Format responses with bullet points when listing multiple items.
+Always provide accurate, helpful information about visa processes.`;
 
-      const message = await anthropic.messages.create({
-        model: "claude-haiku-4-5",
-        max_tokens: 800,
-        system: systemPrompt,
-        messages: chatHistory,
+      // Use systemInstruction for better system prompt handling
+      const model = genAI.getGenerativeModel({
+        model: "gemini-3-flash-preview",
+        systemInstruction: systemPrompt,
       });
 
-      const responseText = message.content[0].type === "text" ? message.content[0].text : "I apologize, I couldn't generate a response.";
+      const chat = model.startChat({
+        history: geminiHistory,
+      });
+
+      const result = await chat.sendMessage(content);
+      const responseText = result.response.text();
 
       const assistantMsg = await storage.createChatMessage({
         userId,
@@ -602,7 +750,7 @@ Be concise, professional, and helpful. Format responses with bullet points when 
 
       res.json(assistantMsg);
     } catch (e) {
-      console.error(e);
+      console.error("Chat error:", e);
       res.status(500).json({ message: "Chat failed" });
     }
   });
@@ -616,8 +764,8 @@ Be concise, professional, and helpful. Format responses with bullet points when 
     if (user?.role === "officer" || user?.role === "admin") {
       const all = await storage.getAllApplications();
       const blockchain = await storage.getAllBlockchainEntries();
-      
-      const filteredApps = user.role === "officer" && user.assignedCountry 
+
+      const filteredApps = user.role === "officer" && user.assignedCountry
         ? all.filter(a => a.destinationCountry === user.assignedCountry)
         : all;
 
@@ -666,7 +814,7 @@ Be concise, professional, and helpful. Format responses with bullet points when 
     const { db } = await import("./db");
     const { users } = await import("@shared/schema");
     const { eq } = await import("drizzle-orm");
-    
+
     await db.update(users).set({ role }).where(eq(users.id, targetId));
     res.json({ success: true });
   });
@@ -682,7 +830,7 @@ Be concise, professional, and helpful. Format responses with bullet points when 
     const { db } = await import("./db");
     const { users } = await import("@shared/schema");
     const { eq } = await import("drizzle-orm");
-    
+
     await db.update(users).set({ assignedCountry: country }).where(eq(users.id, targetId));
     res.json({ success: true });
   });
@@ -697,13 +845,13 @@ Be concise, professional, and helpful. Format responses with bullet points when 
     const { db } = await import("./db");
     const { visaApplications, documents, statusTimeline, blockchainLedger } = await import("@shared/schema");
     const { eq } = await import("drizzle-orm");
-    
+
     // Cleanup related records first
     await db.delete(blockchainLedger).where(eq(blockchainLedger.applicationId, appId));
     await db.delete(statusTimeline).where(eq(statusTimeline.applicationId, appId));
     await db.delete(documents).where(eq(documents.applicationId, appId));
     await db.delete(visaApplications).where(eq(visaApplications.id, appId));
-    
+
     res.json({ success: true });
   });
 
@@ -747,7 +895,7 @@ Be concise, professional, and helpful. Format responses with bullet points when 
       const admin = await storage.getUser(userId);
       if (admin?.role !== "admin") return res.status(403).json({ message: "Admin access required" });
 
-      const officerId = parseInt(req.params.id);
+      const officerId = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id);
       if (isNaN(officerId)) return res.status(400).json({ message: "Invalid officer ID" });
       if (officerId === userId) return res.status(400).json({ message: "Cannot delete your own account" });
 

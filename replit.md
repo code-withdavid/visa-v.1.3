@@ -9,16 +9,16 @@ A full-stack AI-driven visa processing system with blockchain integration, real-
 - **Frontend**: React + TypeScript + Vite + Shadcn UI + Tailwind CSS (futuristic dark/light theme)
 - **Backend**: Express.js + TypeScript
 - **Database**: PostgreSQL via Drizzle ORM
-- **AI**: Anthropic Claude (via Replit AI Integrations) — document verification, risk scoring, chatbot
+- **AI**: Google Gemini 1.5 Flash — document verification, risk scoring, chatbot
 - **Auth**: Custom token-based auth (localStorage)
 
 ## System Features
 
 ### Futuristic Modules:
-1. **AI Document Verification** — Simulated OCR and authenticity checking via Claude
+1. **AI Document Verification** — Simulated OCR and authenticity checking via Gemini
 2. **AI Fraud Detection & Risk Scoring** — Predictive risk model (Low/Medium/High) with score 0-100
 3. **Blockchain Visa Ledger** — SHA-256 hash chain with block index, nonce, merkle root, and TX IDs
-4. **AI Chatbot (VisaBot)** — Claude-powered assistant for renewal guidance and questions
+4. **AI Chatbot (VisaBot)** — Gemini-powered assistant for renewal guidance and questions
 5. **Real-Time Status Pipeline** — 6-stage visual tracker: Document Submission → AI Verification → Security Check → Risk Assessment → Blockchain Entry → Decision
 
 ### User Roles:
@@ -78,8 +78,7 @@ A full-stack AI-driven visa processing system with blockchain integration, real-
 ## Environment Variables
 
 - `DATABASE_URL` — PostgreSQL connection string (auto-provisioned)
-- `AI_INTEGRATIONS_ANTHROPIC_API_KEY` — Anthropic API key (via Replit AI Integrations)
-- `AI_INTEGRATIONS_ANTHROPIC_BASE_URL` — Anthropic base URL (via Replit AI Integrations)
+- `GEMINI_API_KEY` — Google Gemini API key
 
 ## Architecture
 

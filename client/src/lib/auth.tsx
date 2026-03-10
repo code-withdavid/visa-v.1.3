@@ -15,7 +15,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   token: string | null;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, role?: "applicant" | "officer" | "admin") => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => void;
   setSession: (user: User, token: string) => void;
@@ -55,8 +55,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const login = async (email: string, password: string) => {
-    const res = await fetch("/api/auth/login", {
+  const login = async (email: string, password: string, role: "applicant" | "officer" | "admin" = "applicant") => {
+    const endpoint = `/api/auth/login/${role}`;
+    const res = await fetch(endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),

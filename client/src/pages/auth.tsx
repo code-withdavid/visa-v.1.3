@@ -67,7 +67,7 @@ export default function AuthPage() {
   const handleLogin = async (data: LoginForm) => {
     setIsSubmitting(true);
     try {
-      await login(data.email, data.password);
+      await login(data.email, data.password, activePortal);
     } catch (e: any) {
       toast({ title: "Login Failed", description: e.message, variant: "destructive" });
     } finally {

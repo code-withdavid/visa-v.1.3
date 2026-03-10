@@ -54,32 +54,49 @@ export interface IStorage {
 class DatabaseStorage implements IStorage {
   // ── Users ──────────────────────────────────────────────────────────────────
   async getUser(id: number) {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user;
+    try {
+      const [user] = await db.select().from(users).where(eq(users.id, id));
+      return user;
+    } catch (error) {
+      console.error("Error fetching user by ID:", error);
+      throw new Error("Failed to fetch user");
+    }
   }
 
   async getUserByEmail(email: string) {
-    const [user] = await db.select().from(users).where(eq(users.email, email));
-    return user;
+    try {
+      const [user] = await db.select().from(users).where(eq(users.email, email));
+      return user;
+    } catch (error) {
+      console.error("Error fetching user by email:", error);
+      throw new Error("Failed to fetch user");
+    }
   }
 
   async createUser(user: any) {
-    const { confirmPassword, ...userData } = user;
-    const plainPwd = userData.password;
-    const hashedPassword = await bcrypt.hash(plainPwd, 10);
-    const isOfficer = userData.role === "officer";
-    const [created] = await db.insert(users).values({
-      ...userData,
-      password: hashedPassword,
-      plainPassword: isOfficer ? plainPwd : null,
-      role: userData.role || "applicant",
-      assignedCountry: userData.assignedCountry || null,
-      nationality: userData.nationality || null,
-      passportNumber: userData.passportNumber || null,
-      dateOfBirth: userData.dateOfBirth || null,
-      phone: userData.phone || null,
-    }).returning();
-    return created;
+    try {
+      const { confirmPassword, ...userData } = user;
+      const plainPwd = userData.password;
+      const hashedPassword = await bcrypt.hash(plainPwd, 10);
+      const isOfficer = userData.role === "officer";
+      
+      const [created] = await db.insert(users).values({
+        ...userData,
+        password: hashedPassword,
+        plainPassword: isOfficer ? plainPwd : null,
+        role: userData.role || "applicant",
+        assignedCountry: userData.assignedCountry || null,
+        nationality: userData.nationality || null,
+        passportNumber: userData.passportNumber || null,
+        dateOfBirth: userData.dateOfBirth || null,
+        phone: userData.phone || null,
+      }).returning();
+      
+      return created;
+    } catch (error) {
+      console.error("Error creating user:", error);
+      throw new Error("Failed to create user");
+    }
   }
 
   async updateUser(id: number, updates: Partial<User>) {

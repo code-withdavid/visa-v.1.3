@@ -19,6 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 const schema = z.object({
   applicationType: z.string(),
   visaType: z.string().min(1, "Visa type is required"),
+  passportNumber: z.string().min(3, "Passport number is required"),
   destinationCountry: z.string().min(2, "Destination country is required"),
   purposeOfVisit: z.string().min(10, "Please describe your purpose (at least 10 characters)"),
   intendedEntryDate: z.string().optional(),
@@ -65,6 +66,7 @@ export default function NewApplication() {
     defaultValues: {
       applicationType: "new",
       visaType: "",
+      passportNumber: "",
       destinationCountry: "",
       purposeOfVisit: "",
       intendedEntryDate: "",
@@ -181,6 +183,20 @@ export default function NewApplication() {
                       </FormItem>
                     )} />
                   </div>
+
+                  <FormField control={form.control} name="passportNumber" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Passport Number</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="Enter your passport number" 
+                          data-testid="input-passport-number"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
 
                   <FormField control={form.control} name="destinationCountry" render={({ field }) => (
                     <FormItem>
