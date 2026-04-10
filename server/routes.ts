@@ -278,21 +278,6 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
   });
 
-  // ── SUPABASE DIAGNOSTICS ──────────────────────────────────────────────────
-  app.get("/api/debug/supabase", (req: Request, res: Response) => {
-    const url = process.env.SUPABASE_URL || "";
-    const key = process.env.SUPABASE_ANON_KEY || "";
-    res.json({
-      urlPresent: !!url,
-      urlLength: url.length,
-      urlFirstChars: url.slice(0, 10),
-      urlStartsWithHttps: url.startsWith("https://"),
-      urlTrimmed: url.trim().slice(0, 10),
-      keyPresent: !!key,
-      keyLength: key.length,
-    });
-  });
-
   // ── SUPABASE FILE UPLOAD ───────────────────────────────────────────────────
   app.post(
     "/api/applications/:id/upload",
