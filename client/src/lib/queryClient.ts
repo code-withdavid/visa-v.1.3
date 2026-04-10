@@ -35,6 +35,24 @@ export async function apiRequest(
   return res;
 }
 
+export async function uploadFile(
+  url: string,
+  file: File,
+  extraFields?: Record<string, string>,
+): Promise<Response> {
+  const headers: Record<string, string> = { ...getAuthHeaders() };
+  const formData = new FormData();
+  formData.append("file", file);
+  if (extraFields) {
+    for (const [key, value] of Object.entries(extraFields)) {
+      formData.append(key, value);
+    }
+  }
+  const res = await fetch(url, { method: "POST", headers, body: formData });
+  await throwIfResNotOk(res);
+  return res;
+}
+
 type UnauthorizedBehavior = "returnNull" | "throw";
 export const getQueryFn: <T>(options: {
   on401: UnauthorizedBehavior;

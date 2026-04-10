@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, uploadFile } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -81,30 +81,16 @@ export default function NewApplication() {
     mutationFn: async (data: FormData) => {
       const res = await apiRequest("POST", "/api/applications", data);
       const app = await res.json();
-      if (passportPhotoFile) {
-        await apiRequest("POST", `/api/applications/${app.id}/documents`, {
-          documentType: "passport_photo",
-          fileName: passportPhotoFile.name,
-          fileSize: passportPhotoFile.size,
-          mimeType: passportPhotoFile.type,
-        });
+
+      const uploads: Array<{ file: File; type: string }> = [];
+      if (passportPhotoFile) uploads.push({ file: passportPhotoFile, type: "passport_photo" });
+      if (passportFile) uploads.push({ file: passportFile, type: "passport" });
+      if (bankFile) uploads.push({ file: bankFile, type: "financial" });
+
+      for (const { file, type } of uploads) {
+        await uploadFile(`/api/applications/${app.id}/upload`, file, { documentType: type });
       }
-      if (passportFile) {
-        await apiRequest("POST", `/api/applications/${app.id}/documents`, {
-          documentType: "passport",
-          fileName: passportFile.name,
-          fileSize: passportFile.size,
-          mimeType: passportFile.type,
-        });
-      }
-      if (bankFile) {
-        await apiRequest("POST", `/api/applications/${app.id}/documents`, {
-          documentType: "financial",
-          fileName: bankFile.name,
-          fileSize: bankFile.size,
-          mimeType: bankFile.type,
-        });
-      }
+
       return app;
     },
     onSuccess: (app) => {

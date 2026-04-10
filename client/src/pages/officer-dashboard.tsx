@@ -78,6 +78,7 @@ interface DocumentRecord {
   applicationId: number;
   documentType: string;
   fileName: string;
+  fileUrl: string | null;
   fileSize: number;
   mimeType: string;
   verified: boolean;
@@ -728,7 +729,7 @@ export default function OfficerDashboard() {
 
       {/* ── Document Review Dialog ── */}
       <Dialog open={!!viewDocsApp} onOpenChange={() => setViewDocsApp(null)}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FileText className="w-5 h-5 text-primary" />
@@ -743,113 +744,131 @@ export default function OfficerDashboard() {
 
           {docsQuery.isLoading ? (
             <div className="space-y-3 py-2">
-              {[1, 2, 3].map(i => <Skeleton key={i} className="h-24" />)}
+              {[1, 2, 3].map(i => <Skeleton key={i} className="h-32" />)}
             </div>
           ) : !docsQuery.data || docsQuery.data.length === 0 ? (
-            <div className="py-10 text-center space-y-3">
-              <FileText className="w-12 h-12 mx-auto text-muted-foreground/40" />
+            <div className="py-14 text-center space-y-3">
+              <FileText className="w-12 h-12 mx-auto text-muted-foreground/30" />
               <p className="text-muted-foreground text-sm">No documents uploaded for this application.</p>
             </div>
           ) : (
-            <div className="space-y-3 py-2">
-              {[
-                { type: "passport", label: "Passport / ID", Icon: FileText, accept: "PDF" },
-                { type: "photo", label: "Passport Photo", Icon: ImageIcon, accept: "Image" },
-                { type: "financial", label: "Bank Statement", Icon: Landmark, accept: "PDF" },
-              ].map(({ type, label, Icon, accept }) => {
-                const doc = docsQuery.data?.find(d => d.documentType === type);
-                return (
-                  <div key={type} className="rounded-xl border bg-card overflow-hidden">
-                    <div className="flex items-center gap-3 px-4 py-3 border-b bg-muted/30">
-                      <Icon className="w-4 h-4 text-primary flex-shrink-0" />
-                      <span className="font-medium text-sm">{label}</span>
-                      <span className="text-[10px] text-muted-foreground ml-auto font-mono">{accept}</span>
-                    </div>
-                    {doc ? (
-                      <div className="p-4 space-y-3">
-                        <div className="flex items-start justify-between gap-3 flex-wrap">
-                          <div className="min-w-0">
-                            <p className="text-sm font-medium truncate">{doc.fileName}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {(doc.fileSize / 1024).toFixed(1)} KB · {doc.mimeType} · Uploaded {new Date(doc.uploadedAt).toLocaleDateString()}
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-2 flex-shrink-0">
-                            {doc.verified ? (
-                              <Badge className="bg-green-100 text-green-700 border-green-200 gap-1 text-[11px]">
-                                <ShieldCheck className="w-3 h-3" />
-                                Verified {doc.aiConfidenceScore ? `${Math.round(doc.aiConfidenceScore * 100)}%` : ""}
-                              </Badge>
-                            ) : (
-                              <Badge variant="secondary" className="gap-1 text-[11px]">
-                                <ShieldAlert className="w-3 h-3" />
-                                Unverified
-                              </Badge>
-                            )}
-                            {!doc.verified && (
-                              <Button
-                                size="sm"
-                                className="h-7 text-xs"
-                                onClick={() => verifyDocMutation.mutate({ docId: doc.id, documentType: doc.documentType, fileName: doc.fileName })}
-                                disabled={verifyDocMutation.isPending}
-                                data-testid={`button-verify-doc-${doc.id}`}
-                              >
-                                {verifyDocMutation.isPending ? "Verifying…" : "AI Verify"}
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-                        {doc.aiVerificationNotes && (
-                          <div className="rounded-md bg-blue-50 border border-blue-100 px-3 py-2 text-xs text-blue-800">
-                            <span className="font-semibold">AI Notes: </span>{doc.aiVerificationNotes}
-                          </div>
-                        )}
-                        {doc.extractedData && Object.keys(doc.extractedData).length > 0 && (
-                          <div className="rounded-md bg-muted/40 px-3 py-2 grid grid-cols-2 gap-x-4 gap-y-1">
-                            {Object.entries(doc.extractedData).map(([k, v]) => (
-                              <div key={k} className="text-xs">
-                                <span className="text-muted-foreground capitalize">{k.replace(/([A-Z])/g, " $1")}: </span>
-                                <span className="font-medium">{String(v)}</span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="px-4 py-6 text-center text-sm text-muted-foreground">
-                        No {label.toLowerCase()} uploaded
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+            <div className="space-y-4 py-2">
+              {docsQuery.data.map(doc => {
+                const isImage = doc.mimeType?.startsWith("image/");
+                const isPdf = doc.mimeType === "application/pdf";
+                const labelMap: Record<string, string> = {
+                  passport_photo: "Passport-Size Photo",
+                  passport: "Passport / ID",
+                  financial: "Bank Statement",
+                  invitation: "Invitation Letter",
+                  itinerary: "Travel Itinerary",
+                  insurance: "Travel Insurance",
+                };
+                const label = labelMap[doc.documentType] || doc.documentType.replace(/_/g, " ");
 
-              {/* Any extra document types */}
-              {docsQuery.data.filter(d => !["passport","photo","financial"].includes(d.documentType)).map(doc => (
-                <div key={doc.id} className="rounded-xl border bg-card overflow-hidden">
-                  <div className="flex items-center gap-3 px-4 py-3 border-b bg-muted/30">
-                    <FileText className="w-4 h-4 text-primary flex-shrink-0" />
-                    <span className="font-medium text-sm capitalize">{doc.documentType.replace(/_/g, " ")}</span>
-                  </div>
-                  <div className="p-4 space-y-2">
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <p className="text-sm font-medium">{doc.fileName}</p>
-                        <p className="text-xs text-muted-foreground">{(doc.fileSize / 1024).toFixed(1)} KB · {new Date(doc.uploadedAt).toLocaleDateString()}</p>
-                      </div>
-                      {doc.verified ? (
-                        <Badge className="bg-green-100 text-green-700 border-green-200 gap-1 text-[11px]">
-                          <ShieldCheck className="w-3 h-3" /> Verified
-                        </Badge>
+                return (
+                  <div
+                    key={doc.id}
+                    className="rounded-xl border bg-card overflow-hidden"
+                    data-testid={`doc-card-${doc.id}`}
+                  >
+                    {/* Header */}
+                    <div className="flex items-center gap-3 px-4 py-3 border-b bg-muted/30">
+                      {isImage ? (
+                        <ImageIcon className="w-4 h-4 text-primary flex-shrink-0" />
                       ) : (
-                        <Badge variant="secondary" className="gap-1 text-[11px]">
-                          <ShieldAlert className="w-3 h-3" /> Unverified
-                        </Badge>
+                        <FileText className="w-4 h-4 text-primary flex-shrink-0" />
+                      )}
+                      <span className="font-medium text-sm capitalize">{label}</span>
+                      <span className="text-[10px] text-muted-foreground font-mono ml-1">
+                        {isImage ? "Image" : isPdf ? "PDF" : doc.mimeType}
+                      </span>
+                      <div className="ml-auto flex items-center gap-2">
+                        {doc.verified ? (
+                          <Badge className="bg-green-100 text-green-700 border-green-200 gap-1 text-[11px]">
+                            <ShieldCheck className="w-3 h-3" />
+                            Verified {doc.aiConfidenceScore ? `${Math.round(doc.aiConfidenceScore * 100)}%` : ""}
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary" className="gap-1 text-[11px]">
+                            <ShieldAlert className="w-3 h-3" />
+                            Unverified
+                          </Badge>
+                        )}
+                        {!doc.verified && (
+                          <Button
+                            size="sm"
+                            className="h-7 text-xs"
+                            onClick={() => verifyDocMutation.mutate({ docId: doc.id, documentType: doc.documentType, fileName: doc.fileName })}
+                            disabled={verifyDocMutation.isPending}
+                            data-testid={`button-verify-doc-${doc.id}`}
+                          >
+                            {verifyDocMutation.isPending ? "Verifying…" : "AI Verify"}
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Preview / Content */}
+                    <div className="p-4 space-y-3">
+                      {/* Image preview */}
+                      {isImage && doc.fileUrl && (
+                        <div className="rounded-lg overflow-hidden border bg-muted/20 flex items-center justify-center" style={{ maxHeight: 320 }}>
+                          <img
+                            src={doc.fileUrl}
+                            alt={label}
+                            className="max-w-full max-h-80 object-contain"
+                            data-testid={`img-preview-${doc.id}`}
+                          />
+                        </div>
+                      )}
+
+                      {/* PDF / file link */}
+                      {doc.fileUrl && (
+                        <a
+                          href={doc.fileUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 text-xs text-primary underline-offset-2 hover:underline"
+                          data-testid={`link-open-doc-${doc.id}`}
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          {isImage ? "Open full image" : "Open document"}
+                        </a>
+                      )}
+
+                      {/* Meta */}
+                      <div className="text-xs text-muted-foreground flex gap-3 flex-wrap">
+                        <span className="font-medium text-foreground/80 truncate">{doc.fileName}</span>
+                        {doc.fileSize ? <span>{(doc.fileSize / 1024).toFixed(1)} KB</span> : null}
+                        <span>Uploaded {new Date(doc.uploadedAt).toLocaleDateString()}</span>
+                        {!doc.fileUrl && (
+                          <span className="text-yellow-600">No file stored — metadata only</span>
+                        )}
+                      </div>
+
+                      {/* AI notes */}
+                      {doc.aiVerificationNotes && (
+                        <div className="rounded-md bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-800 px-3 py-2 text-xs text-blue-800 dark:text-blue-200">
+                          <span className="font-semibold">AI Notes: </span>{doc.aiVerificationNotes}
+                        </div>
+                      )}
+
+                      {/* Extracted data */}
+                      {doc.extractedData && Object.keys(doc.extractedData).length > 0 && (
+                        <div className="rounded-md bg-muted/40 px-3 py-2 grid grid-cols-2 gap-x-4 gap-y-1">
+                          {Object.entries(doc.extractedData).map(([k, v]) => (
+                            <div key={k} className="text-xs">
+                              <span className="text-muted-foreground capitalize">{k.replace(/([A-Z])/g, " $1")}: </span>
+                              <span className="font-medium">{String(v)}</span>
+                            </div>
+                          ))}
+                        </div>
                       )}
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
           <DialogFooter>

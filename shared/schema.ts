@@ -72,6 +72,7 @@ export const documents = pgTable("documents", {
   applicationId: integer("application_id").notNull().references(() => visaApplications.id),
   documentType: text("document_type").notNull(), // "passport" | "photo" | "financial" | "invitation" | "itinerary" | "insurance"
   fileName: text("file_name").notNull(),
+  fileUrl: text("file_url"), // Supabase Storage public URL
   fileSize: integer("file_size"),
   mimeType: text("mime_type"),
   verified: boolean("verified").default(false),

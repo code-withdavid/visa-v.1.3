@@ -4,6 +4,10 @@ import { createHash, randomBytes } from "crypto";
 import { GoogleGenAI } from "@google/genai";
 import { storage } from "./storage";
 import { generateVisaPDF } from "./pdf-generator";
+import multer from "multer";
+import { uploadFileToSupabase } from "./supabase";
+
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
 const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
 
@@ -259,19 +263,60 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     try {
       const userId = getSessionUserId(req);
       if (!userId) return res.status(401).json({ message: "Not authenticated" });
-      const { documentType, fileName, fileSize, mimeType } = req.body;
+      const { documentType, fileName, fileSize, mimeType, fileUrl } = req.body;
       const doc = await storage.createDocument({
         applicationId: Number(req.params.id),
         documentType,
         fileName,
         fileSize,
         mimeType,
+        fileUrl: fileUrl || null,
       });
       res.status(201).json(doc);
     } catch (e) {
       res.status(500).json({ message: "Failed to upload document" });
     }
   });
+
+  // ── SUPABASE FILE UPLOAD ───────────────────────────────────────────────────
+  app.post(
+    "/api/applications/:id/upload",
+    (req: Request, res: Response, next: Function) => {
+      upload.single("file")(req as any, res as any, next);
+    },
+    async (req: Request, res: Response) => {
+      try {
+        const userId = getSessionUserId(req);
+        if (!userId) return res.status(401).json({ message: "Not authenticated" });
+
+        const file = (req as any).file;
+        if (!file) return res.status(400).json({ message: "No file provided" });
+
+        const { documentType } = req.body;
+        if (!documentType) return res.status(400).json({ message: "documentType is required" });
+
+        const appId = Number(req.params.id);
+        const ext = file.originalname.split(".").pop() || "bin";
+        const storagePath = `app-${appId}/${documentType}-${Date.now()}.${ext}`;
+
+        const fileUrl = await uploadFileToSupabase(file.buffer, storagePath, file.mimetype);
+
+        const doc = await storage.createDocument({
+          applicationId: appId,
+          documentType,
+          fileName: file.originalname,
+          fileSize: file.size,
+          mimeType: file.mimetype,
+          fileUrl,
+        });
+
+        res.status(201).json(doc);
+      } catch (e: any) {
+        console.error("File upload error:", e);
+        res.status(500).json({ message: e.message || "File upload failed" });
+      }
+    }
+  );
 
   // ── AI DOCUMENT VERIFICATION ──────────────────────────────────────────────
   app.post("/api/documents/:docId/verify", async (req: Request, res: Response) => {

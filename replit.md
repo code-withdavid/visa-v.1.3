@@ -66,6 +66,7 @@ A full-stack AI-driven visa processing system with blockchain integration, real-
 - `POST /api/auth/register` — Register
 - `GET /api/applications` — Get user applications
 - `POST /api/applications` — Create application
+- `POST /api/applications/:id/upload` — Upload document file to Supabase Storage (multipart)
 - `POST /api/applications/:id/risk-score` — Run AI risk scoring
 - `POST /api/documents/:docId/verify` — Run AI document verification
 - `POST /api/applications/:id/blockchain/issue` — Issue blockchain visa
@@ -77,8 +78,18 @@ A full-stack AI-driven visa processing system with blockchain integration, real-
 
 ## Environment Variables
 
-- `DATABASE_URL` — PostgreSQL connection string (auto-provisioned)
+- `NEON_DATABASE_URL` — Neon PostgreSQL connection string
 - `GEMINI_API_KEY` — Google Gemini API key
+- `SUPABASE_URL` — Supabase project URL
+- `SUPABASE_ANON_KEY` — Supabase anon/public API key
+
+## Supabase Storage
+
+Documents are uploaded to a Supabase Storage bucket named `documents` (must be public).
+- Applicants upload real files (images, PDFs) when submitting applications
+- Files are stored at path: `app-{appId}/{documentType}-{timestamp}.{ext}`
+- Public URLs are saved in the `documents.file_url` column
+- Officers can preview images inline and open PDFs/files via direct links in the Document Review panel
 
 ## Architecture
 
