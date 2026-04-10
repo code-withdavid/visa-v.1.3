@@ -4,16 +4,27 @@ export const BUCKET = "documents";
 
 let _client: SupabaseClient | null = null;
 
+function normalizeUrl(raw: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) {
+    return `https://${trimmed}`;
+  }
+  return trimmed;
+}
+
 function getClient(): SupabaseClient {
   if (!_client) {
-    const supabaseUrl = process.env.SUPABASE_URL;
+    const rawUrl = process.env.SUPABASE_URL;
     const supabaseKey = process.env.SUPABASE_ANON_KEY;
 
-    if (!supabaseUrl || !supabaseKey) {
+    if (!rawUrl || !supabaseKey) {
       throw new Error("SUPABASE_URL and SUPABASE_ANON_KEY must be set in environment secrets.");
     }
 
-    _client = createClient(supabaseUrl, supabaseKey);
+    const supabaseUrl = normalizeUrl(rawUrl);
+    console.log(`[supabase] connecting to: ${supabaseUrl.slice(0, 30)}...`);
+
+    _client = createClient(supabaseUrl, supabaseKey.trim());
   }
   return _client;
 }

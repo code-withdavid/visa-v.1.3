@@ -1,5 +1,12 @@
 import dotenv from "dotenv";
 dotenv.config();
+
+// Diagnostic: safely confirm Supabase URL format at startup
+const _sbUrl = process.env.SUPABASE_URL || "";
+const _sbKey = process.env.SUPABASE_ANON_KEY || "";
+console.log(`[startup] SUPABASE_URL present=${!!_sbUrl} len=${_sbUrl.length} prefix="${_sbUrl.slice(0, 12)}" startsHttps=${_sbUrl.startsWith("https://")}`);
+console.log(`[startup] SUPABASE_ANON_KEY present=${!!_sbKey} len=${_sbKey.length}`);
+
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
