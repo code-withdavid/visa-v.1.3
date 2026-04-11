@@ -7,13 +7,16 @@ let _client: SupabaseClient | null = null;
 function getClient(): SupabaseClient {
   if (!_client) {
     const supabaseUrl = process.env.SUPABASE_URL?.trim();
-    const supabaseKey = process.env.SUPABASE_ANON_KEY?.trim();
+    // Use service role key for server-side uploads (bypasses RLS)
+    const supabaseKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY)?.trim();
 
     if (!supabaseUrl || !supabaseKey) {
-      throw new Error("SUPABASE_URL and SUPABASE_ANON_KEY must be set in environment secrets.");
+      throw new Error("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set in environment secrets.");
     }
 
-    _client = createClient(supabaseUrl, supabaseKey);
+    _client = createClient(supabaseUrl, supabaseKey, {
+      auth: { persistSession: false },
+    });
   }
   return _client;
 }
