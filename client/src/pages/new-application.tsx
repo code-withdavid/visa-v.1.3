@@ -318,7 +318,7 @@ export default function NewApplication() {
                         <input
                           type="file"
                           className="hidden"
-                          accept="image/jpeg,image/jpg"
+                          accept="image/jpeg,image/jpg,image/png,image/webp"
                           ref={passportPhotoInputRef}
                           onChange={e => setPassportPhotoFile(e.target.files?.[0] ?? null)}
                           data-testid="input-passport-photo"
@@ -329,7 +329,7 @@ export default function NewApplication() {
                           </div>
                           <div className="flex-1">
                             <p className="text-sm text-muted-foreground">Click to select passport photo</p>
-                            <p className="text-xs text-muted-foreground/60">JPG only · white background · 35×45mm</p>
+                            <p className="text-xs text-muted-foreground/60">JPG, PNG or WEBP · white background · 35×45mm</p>
                           </div>
                           <Upload className="w-4 h-4 text-muted-foreground/40 flex-shrink-0" />
                         </div>
