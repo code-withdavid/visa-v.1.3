@@ -753,7 +753,11 @@ export default function OfficerDashboard() {
             </div>
           ) : (
             <div className="space-y-4 py-2">
-              {docsQuery.data.map(doc => {
+              {[...docsQuery.data].sort((a, b) => {
+                const order = ["passport", "passport_photo", "financial", "invitation", "itinerary", "insurance"];
+                const ai = order.indexOf(a.documentType); const bi = order.indexOf(b.documentType);
+                return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+              }).map(doc => {
                 const isImage = doc.mimeType?.startsWith("image/");
                 const isPdf = doc.mimeType === "application/pdf";
                 const labelMap: Record<string, string> = {

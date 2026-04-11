@@ -239,55 +239,6 @@ export default function NewApplication() {
                     )} />
                   </div>
 
-                  {/* Passport Photo Upload */}
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium leading-none">Passport-Size Photo (JPG)</p>
-                    {passportPhotoFile ? (
-                      <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-lg border bg-green-500/5 border-green-500/30">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="w-8 h-8 rounded-md bg-green-500/10 flex items-center justify-center flex-shrink-0">
-                            <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-sm font-medium truncate">{passportPhotoFile.name}</p>
-                            <p className="text-xs text-muted-foreground">{(passportPhotoFile.size / 1024).toFixed(1)} KB · JPG</p>
-                          </div>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="flex-shrink-0 h-7 w-7 text-muted-foreground hover:text-destructive"
-                          onClick={() => setPassportPhotoFile(null)}
-                          data-testid="button-remove-passport-photo"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <label className="block cursor-pointer">
-                        <input
-                          type="file"
-                          className="hidden"
-                          accept="image/jpeg,image/jpg"
-                          ref={passportPhotoInputRef}
-                          onChange={e => setPassportPhotoFile(e.target.files?.[0] ?? null)}
-                          data-testid="input-passport-photo"
-                        />
-                        <div className="flex items-center gap-3 px-4 py-3 rounded-lg border-2 border-dashed border-muted hover:border-primary/40 hover:bg-muted/30 transition-all">
-                          <div className="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center flex-shrink-0">
-                            <ImageIcon className="w-4 h-4 text-primary" />
-                          </div>
-                          <div className="flex-1">
-                            <p className="text-sm text-muted-foreground">Click to select passport photo</p>
-                            <p className="text-xs text-muted-foreground/60">JPG only · white background · 35×45mm</p>
-                          </div>
-                          <Upload className="w-4 h-4 text-muted-foreground/40 flex-shrink-0" />
-                        </div>
-                      </label>
-                    )}
-                  </div>
-
                   {/* Passport Upload */}
                   <div className="space-y-2">
                     <p className="text-sm font-medium leading-none">Passport (PDF)</p>
@@ -330,6 +281,55 @@ export default function NewApplication() {
                           <div className="flex-1">
                             <p className="text-sm text-muted-foreground">Click to select passport PDF</p>
                             <p className="text-xs text-muted-foreground/60">PDF only · biodata page</p>
+                          </div>
+                          <Upload className="w-4 h-4 text-muted-foreground/40 flex-shrink-0" />
+                        </div>
+                      </label>
+                    )}
+                  </div>
+
+                  {/* Passport Photo Upload */}
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium leading-none">Passport-Size Photo (JPG)</p>
+                    {passportPhotoFile ? (
+                      <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-lg border bg-green-500/5 border-green-500/30">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-8 h-8 rounded-md bg-green-500/10 flex items-center justify-center flex-shrink-0">
+                            <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium truncate">{passportPhotoFile.name}</p>
+                            <p className="text-xs text-muted-foreground">{(passportPhotoFile.size / 1024).toFixed(1)} KB · JPG</p>
+                          </div>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="flex-shrink-0 h-7 w-7 text-muted-foreground hover:text-destructive"
+                          onClick={() => setPassportPhotoFile(null)}
+                          data-testid="button-remove-passport-photo"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <label className="block cursor-pointer">
+                        <input
+                          type="file"
+                          className="hidden"
+                          accept="image/jpeg,image/jpg"
+                          ref={passportPhotoInputRef}
+                          onChange={e => setPassportPhotoFile(e.target.files?.[0] ?? null)}
+                          data-testid="input-passport-photo"
+                        />
+                        <div className="flex items-center gap-3 px-4 py-3 rounded-lg border-2 border-dashed border-muted hover:border-primary/40 hover:bg-muted/30 transition-all">
+                          <div className="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center flex-shrink-0">
+                            <ImageIcon className="w-4 h-4 text-primary" />
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm text-muted-foreground">Click to select passport photo</p>
+                            <p className="text-xs text-muted-foreground/60">JPG only · white background · 35×45mm</p>
                           </div>
                           <Upload className="w-4 h-4 text-muted-foreground/40 flex-shrink-0" />
                         </div>
