@@ -1,2 +1,0 @@
-[dotenv@17.3.1] injecting env (0) from .env [2m-- tip: ⚙️  suppress all logs with { quiet: true }[0m
-6:34:14 AM [express] serving on port 5000

@@ -1,2 +1,0 @@
-[dotenv@17.3.1] injecting env (0) from .env [2m-- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild[0m
-2:27:16 PM [express] serving on port 5000

@@ -1,5 +1,0 @@
-[dotenv@17.3.1] injecting env (0) from .env [2m-- tip: ⚙️  write to custom object with { processEnv: myObject }[0m
-6:54:23 AM [express] serving on port 5000
-
-A PostCSS plugin did not pass the `from` option to `postcss.parse`. This may cause imported assets to be incorrectly transformed. If you've recently added a PostCSS plugin that raised this warning, please contact the package author to fix the issue.
-7:02:24 AM [express] GET /api/auth/me 401 in 1ms :: {"message":"Not authenticated"}
