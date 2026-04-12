@@ -83,7 +83,7 @@ export default function NewApplication() {
       const app = await res.json();
 
       const uploads: Array<{ file: File; type: string }> = [];
-      if (passportPhotoFile) uploads.push({ file: passportPhotoFile, type: "passport_photo" });
+      if (passportPhotoFile) uploads.push({ file: passportPhotoFile, type: "photo" });
       if (passportFile) uploads.push({ file: passportFile, type: "passport" });
       if (bankFile) uploads.push({ file: bankFile, type: "financial" });
 
